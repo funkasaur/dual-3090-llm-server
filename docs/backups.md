@@ -179,9 +179,38 @@ problem — but at 11 seconds, it currently is not.
 
 ---
 
-## Verify both
+## Keeping both honest
 
 A backup you have never restored is a hypothesis.
+
+### Watch the repository's free space
+
+This is what actually broke the Veeam layer here
+([AUDIT #10](AUDIT.md#10-the-veeam-job-had-not-run-in-three-days)). A synthetic
+full is built by merging the existing chain into a **new** full file, which must
+exist alongside the old one before anything can be pruned. So the volume needs
+roughly one full backup's worth of free space, permanently, on top of the chain
+itself:
+
+```
+chain on disk:  625 GB + 700 GB fulls + incrementals  ≈ 1.3 TB
+free space:     405 GB
+new full needs: ~700 GB                               -> ERROR_DISK_FULL
+```
+
+Retention policy and volume size have to be sized together. A repository that
+fits the chain exactly will fail the first time it tries to make a synthetic
+full, and the failure arrives as a job error rather than a capacity warning.
+
+Alert on it before it bites:
+
+```bash
+# Warn under 1.5x the size of your largest full
+df -h /mnt/storage
+ls -lS /mnt/storage/<repo>/**/*.vbk | head -1
+```
+
+### Check both are still producing
 
 ```bash
 # --- Borg ---
