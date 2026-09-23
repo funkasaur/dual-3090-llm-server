@@ -118,6 +118,33 @@ borg prune --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 borg compact          # without this, pruning frees no actual disk space
 ```
 
+**Retention depth is nearly free, so do not trim it to save space.** Borg
+stores one copy of the data and then deltas, which makes the marginal cost of
+an extra restore point very small. Measured on this repository:
+
+```
+repository on disk:        92 GB
+deduplicated total:        102.75 GB   (16 archives)
+one archive, logical:      136.98 GB
+one archive, deduplicated: 245 MB
+marginal cost per run:     45-375 MB   (avg 92 MB over 30 runs)
+```
+
+Almost the entire 92 GB is the first copy. Cutting from 16 archives to 7 would
+reclaim roughly **0.8 GB** — under 1% — while removing every recovery point
+older than a week.
+
+The instinct to trim comes from reading the `All archives` figure, which is
+2.20 TB here. That is the *logical* sum of every retained archive before
+deduplication, and it is not disk usage. The number that matters is the
+deduplicated column, and on disk it barely moves.
+
+So set Borg's retention by how far back you might need to recover, not by
+disk pressure. If space is genuinely tight, the answer is somewhere else: on
+this machine the same volume held 1.3 TB of Veeam restore points against
+Borg's 92 GB, and the host had 57 GB of unused Docker images and 24.8 GB of
+build cache.
+
 ```bash
 export BORG_PASSPHRASE="$(sudo cat /etc/borg/passphrase)"
 export BORG_REPO=/mnt/storage/borg/system
