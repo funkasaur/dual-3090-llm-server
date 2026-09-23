@@ -27,11 +27,12 @@ most useful file here.
 | [`docs/irq-pinning.md`](docs/irq-pinning.md) | Interrupt isolation — including why the obvious target is the wrong one |
 | [`docs/inference.md`](docs/inference.md) | llama-swap + ik-llama-server, NVLink, measured throughput |
 | [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / DCGM / SNMP |
-| [`docs/backups.md`](docs/backups.md) | Borg with application-consistent pre-hooks |
+| [`docs/backups.md`](docs/backups.md) | Two layers: Borg file-level, Veeam image-level |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | **Findings from auditing this setup against the live machine** |
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
 | [`systemd/`](systemd/) | Units for the above |
 | [`docker/`](docker/) | Compose files for the whole stack, secrets parameterised |
+| [`veeam/`](veeam/) | Guest pre-freeze / post-thaw scripts (patched) |
 
 ---
 
@@ -115,7 +116,8 @@ All of it is in [`docker/`](docker/), secrets parameterised, one directory per u
 - **Ingress** — `cloudflared` Zero Trust tunnel, no inbound ports opened
 - **Observability** — Prometheus, Grafana, node-exporter, dcgm-exporter,
   snmp-exporter, plus a small custom exporter for llama-swap tokens/sec
-- **Backups** — Borg, nightly, with Postgres and Qdrant pre-hooks
+- **Backups** — two layers: Borg nightly with Postgres/Qdrant pre-hooks, plus
+  Veeam image-level backup with guest freeze/thaw scripts
 
 ---
 
