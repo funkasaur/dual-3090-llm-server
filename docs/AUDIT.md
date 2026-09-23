@@ -50,9 +50,48 @@ There is a second-order problem: IRQ affinity is not sticky. Reloading the
 NVIDIA module resets it, with no failed unit and no log line. `optimize-ai.timer`
 now re-asserts the pinning hourly; the script is idempotent.
 
+### 1a. Half the script worked the whole time
+
+The failure was partial in a way worth understanding, because it explains why
+nobody noticed.
+
+The script does two different kinds of work:
+
+| Step | Writes to | Survived? |
+|---|---|---|
+| Ban `irqbalance` from CCD0 | `/etc/systemd/system/irqbalance.service.d/override.conf` | **Yes** |
+| Pin GPU IRQs to the conductor core | `/proc/irq/*/smp_affinity_list` | No |
+
+The first is a **file on disk**. It was written during a successful run some
+time before July and has applied on every boot since — `irqbalance` reads it
+from the unit override whether or not the script ever runs again.
+
+The second is **runtime kernel state**. It lives only in memory, resets on
+every boot, and has to be re-applied by something that actually runs.
+
+So for two months the machine kept its network and NVMe interrupts off CCD0
+exactly as designed, while the GPU pinning the script is named for did
+nothing. The 2.5GbE NIC sitting correctly on CPU 25 — see
+[#3](#3-gpu-interrupts-were-the-wrong-thing-to-optimise) — is a result of that
+surviving config file, not of the script running.
+
+The machine looked healthy because the durable half happened to be the half
+doing the useful work. Combined with #3 — the broken half was aimed at
+interrupts that fire 13 times in two months — the real cost of a two-month
+outage in the headline optimisation was approximately zero. That is luck, not
+design.
+
 **Lesson.** A boot-time `oneshot` that can fail needs either a health check or
 a timer. Otherwise the only symptom of failure is that your optimisation
 quietly isn't one.
+
+And when one script mixes persistent configuration with runtime state, expect
+the two to fail apart. The config half will outlive its own script and keep
+working; the runtime half vanishes at the next reboot, module reload or failed
+unit. Partial success is harder to spot than total failure, because the
+surviving half keeps producing evidence that things are fine. If both halves
+must live in one script, make it idempotent and re-run it on a timer — which
+is what `optimize-ai.timer` now does.
 
 ---
 
@@ -473,5 +512,20 @@ The pattern worth taking away: **seven of these ten were invisible.** The
 service that failed, the alerts that never loaded, the cpuset that was half
 what it looked like, the pruning that never happened, the pinning that reset
 on module reload, the backup job that simply stopped running — all of them
-presented as working systems. The things that
-break loudly get fixed. Build the check for the things that don't.
+presented as working systems. The things that break loudly get fixed. Build
+the check for the things that don't.
+
+The worst of them are the **partial** failures, because they come with
+evidence that everything is fine. `optimize-ai.sh` kept its `irqbalance` ban
+in place for two months after the script stopped running
+([#1a](#1a-half-the-script-worked-the-whole-time)) — interrupts really were
+isolated from CCD0, just not by anything still running. Half a system that
+works is much harder to notice than none of it.
+
+The general shape: **check the output, not the process.** A backup job that
+stopped running produces no errors, only an absence of new restore points. An
+alert file that was never loaded produces no alerts, which is indistinguishable
+from nothing being wrong. A config file that outlived its script produces
+correct behaviour with no cause. In every case the question that finds the
+problem is *"when did this last actually produce something?"* — not *"is it
+enabled?"*
