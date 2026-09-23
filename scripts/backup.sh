@@ -143,6 +143,24 @@ else
         count=$(find "$QDRANT_SNAPSHOT_DIR" -name '*.snapshot' 2>/dev/null | wc -l)
         log "Snapshots visible on host: ${count} in ${QDRANT_SNAPSHOT_DIR}"
         (( count > 0 )) || log "WARNING: snapshot directory is empty — is /qdrant/snapshots mounted?"
+
+        # Report directories belonging to collections that no longer exist.
+        # Pruning above walks the LIVE collection list, so when a collection is
+        # deleted its snapshots stop being pruned and simply sit there forever.
+        #
+        # Deliberately only a warning: those snapshots may be the last copy of
+        # a collection someone dropped by accident, and a backup script is the
+        # wrong place to make that call automatically.
+        for dir in "$QDRANT_SNAPSHOT_DIR"/*/; do
+            [[ -d $dir ]] || continue
+            name="$(basename "$dir")"
+            [[ $name == tmp ]] && continue
+            if ! grep -qxF "$name" <<< "$collections"; then
+                n=$(find "$dir" -name '*.snapshot' | wc -l)
+                sz=$(du -sh "$dir" | cut -f1)
+                log "WARNING: orphaned snapshots for deleted collection '${name}' (${n} files, ${sz}) — not pruned."
+            fi
+        done
     else
         log "WARNING: ${QDRANT_SNAPSHOT_DIR} does not exist. Qdrant snapshots are"
         log "WARNING: stranded inside the container and are NOT being backed up."
