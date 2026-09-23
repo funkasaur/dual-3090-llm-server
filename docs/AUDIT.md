@@ -251,6 +251,41 @@ PromQL has no bitwise AND, but the three benign bits (`0x1|0x2|0x4`) sum to 7,
 so `>= 8` is exactly equivalent to "some bit of 0x08 or higher is set" — real
 hardware or thermal slowdown only. That is the fix.
 
+### 4d. The metric names were the wrong case, and two did not exist
+
+Loading the rules revealed a further layer. dcgm-exporter emits **UPPERCASE**
+metric names, and every rule — original and rewritten — used lowercase:
+
+```
+$ curl -s localhost:2400/metrics | grep -oE '^DCGM[A-Z_]+' | sort -u
+DCGM_FI_DEV_GPU_TEMP
+DCGM_FI_DEV_FB_USED
+DCGM_FI_DEV_FB_FREE
+...
+
+$ promtool query instant ... 'dcgm_fi_dev_gpu_temp'   -> no data
+```
+
+PromQL is case-sensitive, so `dcgm_fi_dev_gpu_temp` matches nothing. The rules
+load, evaluate, and can never fire. Fixing the loading and the arithmetic still
+left them inert.
+
+Worse, two rules referenced metrics this exporter does not publish at all.
+dcgm-exporter 2.3.2 ships a default counter set of 15 fields, and neither
+`DCGM_FI_DEV_MEMORY_TEMP` (GDDR6X junction temperature) nor
+`DCGM_FI_DEV_CLOCK_THROTTLE_REASONS` is among them — so the memory-temperature
+alert argued for in 4c, and the carefully corrected throttle bitmask from 4b,
+were both written against fields that did not exist. They are documented in the
+rules file with the custom counters CSV needed to enable them.
+
+Replaced with alerts built on metrics the exporter does emit, including
+`DCGM_FI_DEV_XID_ERRORS` (genuine hardware faults) and a check that the 270W
+power cap is actually in force.
+
+**Lesson.** Enumerate the metrics before writing the rule. Three rounds of
+fixes here — loading, arithmetic, naming — and only the last one made any
+alert capable of firing.
+
 ### 4c. The temperature threshold was mislabelled
 
 Alerting at 65°C with the description *"close to thermal throttling limits"* —
