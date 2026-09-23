@@ -51,6 +51,28 @@ it would reintroduce exactly the inconsistency the snapshots exist to prevent.
 > The Compose file now mounts `./qdrant_snapshots:/qdrant/snapshots`, and
 > `backup.sh` warns if that directory is missing or empty.
 
+### Qdrant has no snapshot retention of its own
+
+Worth knowing before you go looking for a setting: self-hosted Qdrant has
+**no built-in snapshot cleanup**. Its `snapshots_config` only chooses where
+snapshots go (`local` or `s3`), not how long they live. Retention exists only
+in Qdrant Cloud ("Days of Retention") and in Private Cloud / Kubernetes via a
+`retention` field on `QdrantClusterScheduledSnapshot`.
+
+So for a Docker deployment, pruning through the API — what `backup.sh` does —
+is the only option. Left alone, snapshots accumulate forever.
+
+### Pin the Qdrant image version
+
+Qdrant guarantees storage compatibility across **one** minor version only, so
+upgrades must step through each minor in turn: `1.17.x -> 1.18.x -> 1.19.x`.
+Skipping is unsupported.
+
+That makes `image: qdrant/qdrant:latest` genuinely dangerous on a stateful
+deployment: a routine `docker compose pull` can carry you across two minors in
+a single step. Pin the tag, bump it one minor at a time, and take a snapshot
+before each step.
+
 Verify from the destination, not the source — the only question that matters
 is whether the snapshots are *in* an archive:
 

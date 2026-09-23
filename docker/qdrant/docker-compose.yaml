@@ -1,6 +1,12 @@
 services:
   qdrant:
-    image: qdrant/qdrant:latest
+    # PATCH: pinned deliberately. Qdrant guarantees storage compatibility for
+    # only ONE minor version, so upgrades must step through every minor:
+    # 1.17.x -> 1.18.x -> 1.19.x. A `:latest` tag on a stateful database lets a
+    # routine `docker compose pull` skip a minor version silently, which is
+    # unsupported. Bump this by hand, one minor at a time, snapshot first.
+    # https://qdrant.tech/documentation/upgrades/
+    image: qdrant/qdrant:v1.19.1
     container_name: qdrant
     cpuset: "8-15,24-31"        # CCD1
     restart: unless-stopped
