@@ -1,45 +1,77 @@
-# Grafana alert rules
-
-Exported from the live Grafana with:
-
-```bash
-curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
-  http://localhost:2000/api/v1/provisioning/alert-rules > grafana/alert-rules.json
-```
+# Grafana alert rules and dashboards
 
 Grafana owns alerting on this build rather than Prometheus, because Grafana can
 deliver notifications on its own and Prometheus rules cannot without an
-Alertmanager. The rules live in Grafana's database, so this export is the only
-reviewable copy - restore with a POST per rule to the same endpoint.
+Alertmanager. These rules live in Grafana's database, so this export is the only
+reviewable copy of the thing that decides when the machine wakes someone up.
 
-| Severity | Alert | Expression | Threshold |
-|---|---|---|---|
-| warning | `CpuDieTemperatureHigh` | `node_hwmon_temp_celsius{chip="pci0000:00_0000:00:18_3",sensor="temp1"}` | > 85 |
-| warning | `GpuCoreTemperatureWarning` | `DCGM_FI_DEV_GPU_TEMP` | > 80 |
-| critical | `GpuCoreTemperatureCritical` | `DCGM_FI_DEV_GPU_TEMP > 84` | > 0 |
-| critical | `GpuExporterDown` | `up{job="dcgm"} == 0` | > 0 |
-| warning | `GpuJunctionTemperatureHigh` | `gpu_junction_temp_celsius > 90` | > 0 |
-| warning | `GpuPowerCapNotApplied` | `DCGM_FI_DEV_POWER_USAGE > 290` | > 0 |
-| warning | `GpuTempCollectorStale` | `time() - gpu_temps_last_update_timestamp_seconds > 300` | > 0 |
-| warning | `GpuVramExhausted` | `(DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 10…` | > 0 |
-| warning | `GpuVramTemperatureHigh` | `gpu_vram_temp_celsius > 95` | > 0 |
-| critical | `GpuXidErrors` | `increase(DCGM_FI_DEV_XID_ERRORS[15m]) > 0` | > 0 |
-| critical | `InferenceEngineDown` | `up{job="llama-swap"} == 0` | > 0 |
-| warning | `NodeExporterDown` | `up{job="node"} == 0` | > 0 |
-| warning | `UpsBatteryAbnormal` | `upsBaseBatteryStatus != 2` | > 0 |
-| warning | `UpsLoadHigh` | `upsAdvanceOutputLoad > 75` | > 0 |
-| critical | `UpsOnBattery` | `upsBaseOutputStatus != 2` | > 0 |
-| critical | `UpsRuntimeLow` | `upsAdvanceBatteryRunTimeRemaining / 6000 < 5` | > 0 |
-| warning | `HostMemoryHigh` | `clamp_min((1 - (node_memory_MemAvailable_bytes{instance="node-exporter:9…` | > 85 |
+```bash
+# export
+curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  http://localhost:2000/api/v1/provisioning/alert-rules > grafana/alert-rules.json
+curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  http://localhost:2000/api/dashboards/uid/dual-ccd-thermals > /tmp/d.json
+```
 
-## Notes
+## Alerts
 
-- Metric names from dcgm-exporter are **UPPERCASE**; PromQL is case-sensitive and
-  the lowercase form silently matches nothing.
-- `gpu_junction_temp_celsius` / `gpu_vram_temp_celsius` come from
-  `gpu-vram-temps.timer` on the host, not from dcgm-exporter, which does not
-  expose those fields. `GpuTempCollectorStale` alerts if that timer stops.
-- CPU sensors on the zenpower chip: `temp1`=Tdie, `temp2`=Tctl, `temp3`=Tccd1
-  (inference die), `temp4`=Tccd2 (RAG die).
-- Thresholds are set to avoid firing under normal sustained load. A 3090 at 75C
-  and a 5950X at 80C are both working normally, not in trouble.
+| Severity | Alert | Threshold |
+|---|---|---|
+| warning | `CcdTemperatureHigh` | > 85 |
+| warning | `CcdTemperatureImbalance` | > 25 |
+| warning | `CpuDieTemperatureHigh` | > 85 |
+| warning | `GpuCoreTemperatureWarning` | > 80 |
+| critical | `GpuCoreTemperatureCritical` | > 0 |
+| critical | `GpuExporterDown` | > 0 |
+| warning | `GpuJunctionTemperatureHigh` | > 0 |
+| warning | `GpuPowerCapNotApplied` | > 0 |
+| warning | `GpuTempCollectorStale` | > 0 |
+| warning | `GpuVramExhausted` | > 0 |
+| warning | `GpuVramTemperatureHigh` | > 0 |
+| critical | `GpuXidErrors` | > 0 |
+| critical | `InferenceEngineDown` | > 0 |
+| warning | `NodeExporterDown` | > 0 |
+| warning | `UpsBatteryAbnormal` | > 0 |
+| warning | `UpsLoadHigh` | > 0 |
+| critical | `UpsOnBattery` | > 0 |
+| critical | `UpsRuntimeLow` | > 0 |
+| warning | `HostMemoryHigh` | > 85 |
+
+## Dashboard: Dual-CCD Thermals
+
+`/d/dual-ccd-thermals`. Four panels:
+
+1. **CPU per-CCD temperature** — Tccd1 (CCD0, inference cores 0-7), Tccd2 (CCD1,
+   RAG stack 8-15) and Tdie.
+2. **CPU per-CCD utilisation** — busy percentage per die, to read against the
+   panel above. Inference is bursty; the RAG stack is steadier.
+3. **GPU core / junction / VRAM** — junction and VRAM come from
+   `gpu-vram-temps.timer`, not dcgm-exporter.
+4. **GPU power vs the 270W cap.**
+
+## Sensor notes
+
+Measured on this machine, which is what the thresholds are sized against:
+
+| Sensor | Label | Meaning |
+|---|---|---|
+| `temp1` | Tdie | Package die temperature, sensor high limit 95C |
+| `temp2` | Tctl | **Not monitored.** Tdie plus a fan-control offset; on a 5950X
+  that offset is zero, so it is the same number twice. It matters on parts where
+  AMD reports a deliberately higher value (Threadripper +27C, 2700X +10C) to make
+  fan curves ramp earlier. |
+| `temp3` | Tccd1 | CCD0 — the inference die |
+| `temp4` | Tccd2 | CCD1 — the RAG/database die |
+
+Over one idle hour: Tccd1 averaged 26.3C (min 25.0, max 58.5, stddev 2.8) and
+Tccd2 averaged 37.9C (min 26.0, max 49.5, stddev 4.2). Two things follow.
+A steady gap of roughly 11C between the dies is normal here, so
+`CcdTemperatureImbalance` is set at 25C over an hourly average rather than
+anything tighter. And the raw sensors swing several degrees at idle — a single
+sample showed Tccd1 above Tccd2 while the hourly averages said the opposite — so
+read trends, never spot values.
+
+Note Tccd1's *maximum* (58.5C) exceeds Tccd2's (49.5C) while its average is much
+lower. That is the shape you would expect from bursty inference on CCD0 against
+steady background load on CCD1.
+
