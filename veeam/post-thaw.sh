@@ -3,10 +3,17 @@
 # Veeam post-thaw script — bring the stateful containers back up after the
 # snapshot has been taken.
 #
-# Install on the Linux guest as /usr/local/bin/post-thaw.sh (mode 0755).
+# DEPLOYMENT (Veeam Agent for Linux managed by Veeam Backup & Replication):
+#   Store this file in a local folder ON THE VEEAM BACKUP SERVER and select it
+#   in the backup job wizard. Veeam uploads it to /var/lib/veeam/scripts on
+#   this machine at job runtime and executes it there as root.
+#   See veeam/README.md for the wizard path.
 #
-# Also invoked by the failsafe timer that pre-freeze.sh arms, so it must be
-# safe to run when the containers are already up.
+# Keep UNIX (LF) line endings — the Veeam server is normally Windows, and a
+# CRLF shebang fails with "bad interpreter: /bin/bash^M". Veeam requires .sh.
+#
+# Safe to run when the containers are already up, so it can also be run by
+# hand to recover a stranded stack.
 #
 set -uo pipefail
 

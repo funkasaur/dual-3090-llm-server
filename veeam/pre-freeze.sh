@@ -2,14 +2,20 @@
 #
 # Veeam pre-freeze script — quiesce stateful containers before the snapshot.
 #
-# Veeam runs this on the guest immediately before taking the snapshot, and
-# runs post-thaw.sh immediately after. Stopping the containers gives a
-# crash-consistent-free, application-consistent image: nothing is mid-write
-# when the snapshot is taken.
+# Stopping the containers gives an application-consistent image: nothing is
+# mid-write when the volume snapshot is taken.
 #
-# Install on the Linux guest (NOT the Veeam server) as:
-#   /usr/local/bin/pre-freeze.sh   (mode 0755, root-owned)
-# and reference that path in the job's guest processing settings.
+# DEPLOYMENT (Veeam Agent for Linux managed by Veeam Backup & Replication):
+#   Store this file in a local folder ON THE VEEAM BACKUP SERVER and select it
+#   in the backup job wizard. At job runtime Veeam uploads it to
+#   /var/lib/veeam/scripts on this machine and runs it there as root. The
+#   wizard browses the backup server's filesystem, not this host's, so
+#   installing it to /usr/local/bin here will NOT make Veeam find it.
+#   See veeam/README.md for the wizard path.
+#
+# The Veeam server is normally Windows, so mind the line endings: this file
+# must keep UNIX (LF) endings or the shebang fails with
+# "bad interpreter: /bin/bash^M". Veeam requires .sh format.
 #
 # Veeam treats a non-zero exit as a failed freeze, so exit codes matter here.
 #
@@ -30,13 +36,22 @@ CONTAINERS=(open-webui webui-postgres qdrant)
 # exactly the inconsistent data directory this script exists to prevent.
 STOP_TIMEOUT="${STOP_TIMEOUT:-60}"
 
+# Start order is the reverse of the stop order: backing services first.
+START_ORDER=(webui-postgres qdrant open-webui)
+
 # Failsafe. If the backup job dies between freeze and thaw, these containers
 # stay down indefinitely: `restart: unless-stopped` does NOT restart a
 # container that was explicitly stopped. This schedules an unconditional thaw
 # as insurance; post-thaw.sh cancels it on the happy path.
+#
+# The failsafe deliberately runs an inline `docker start` rather than calling
+# post-thaw.sh. Veeam uploads these scripts to /var/lib/veeam/scripts for the
+# duration of the job, so a path reference here would be pointing at a file
+# that may not exist by the time the timer fires. Inlining removes the
+# dependency entirely — the insurance policy must not rely on the thing it is
+# insuring against.
 FAILSAFE_MINUTES="${FAILSAFE_MINUTES:-30}"
 FAILSAFE_UNIT="veeam-failsafe-thaw"
-POST_THAW="${POST_THAW:-/usr/local/bin/post-thaw.sh}"
 
 LOG="${LOG:-/var/log/veeam-freeze.log}"
 
@@ -47,16 +62,20 @@ log "=== Freeze starting (PID $$) ==="
 # ---------------------------------------------------------------------------
 # Arm the failsafe BEFORE stopping anything
 # ---------------------------------------------------------------------------
-if command -v systemd-run >/dev/null 2>&1 && [[ -x $POST_THAW ]]; then
+if command -v systemd-run >/dev/null 2>&1; then
     systemctl stop "${FAILSAFE_UNIT}.timer" >/dev/null 2>&1 || true
+    systemctl reset-failed "${FAILSAFE_UNIT}.service" >/dev/null 2>&1 || true
+
+    docker_bin="$(command -v docker || echo /usr/bin/docker)"
     if systemd-run --quiet --on-active="${FAILSAFE_MINUTES}min" \
-                   --unit="$FAILSAFE_UNIT" "$POST_THAW" >/dev/null 2>&1; then
-        log "Failsafe armed: unconditional thaw in ${FAILSAFE_MINUTES}m."
+                   --unit="$FAILSAFE_UNIT" \
+                   "$docker_bin" start "${START_ORDER[@]}" >/dev/null 2>&1; then
+        log "Failsafe armed: unconditional 'docker start ${START_ORDER[*]}' in ${FAILSAFE_MINUTES}m."
     else
         log "WARNING: could not arm failsafe timer; continuing without it."
     fi
 else
-    log "WARNING: systemd-run or ${POST_THAW} unavailable; no failsafe armed."
+    log "WARNING: systemd-run unavailable; no failsafe armed."
 fi
 
 # ---------------------------------------------------------------------------
