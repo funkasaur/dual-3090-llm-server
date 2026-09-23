@@ -25,7 +25,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Resource pressure via PSI",
+      "description": "CPU, memory and I/O stall pressure (PSI). I/O is the one to watch: the NVMe queues are hard-bound to the inference cores and cannot be moved.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -117,6 +117,15 @@
           "range": false,
           "refId": "B",
           "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "rate(node_pressure_io_waiting_seconds_total{}[$__rate_interval])",
+          "legendFormat": "io",
+          "refId": "C"
         }
       ],
       "title": "Pressure",
@@ -227,24 +236,33 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
+      "description": "Ryzen Tdie (zenpower temp1); sensor high limit is 95C.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 75
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 85
               }
             ]
-          }
+          },
+          "unit": "celsius"
         }
       },
       "gridPos": {
@@ -296,7 +314,7 @@
           "refId": "A"
         }
       ],
-      "title": "Temp",
+      "title": "CPU Temp",
       "type": "gauge"
     },
     {
@@ -398,6 +416,7 @@
           "color": {
             "mode": "palette-classic"
           },
+          "decimals": 0,
           "max": 90,
           "min": 0,
           "thresholds": {
@@ -405,11 +424,15 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
               },
               {
                 "color": "red",
-                "value": 70
+                "value": 84
               }
             ]
           },
@@ -465,7 +488,7 @@
           "refId": "A"
         }
       ],
-      "title": "GPU 0",
+      "title": "GPU 0 Temp",
       "type": "gauge"
     },
     {
@@ -478,6 +501,7 @@
           "color": {
             "mode": "palette-classic"
           },
+          "decimals": 0,
           "max": 90,
           "min": 0,
           "thresholds": {
@@ -485,11 +509,15 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
               },
               {
                 "color": "red",
-                "value": 70
+                "value": 84
               }
             ]
           },
@@ -545,7 +573,7 @@
           "refId": "A"
         }
       ],
-      "title": "GPU 1",
+      "title": "GPU 1 Temp",
       "type": "gauge"
     },
     {
@@ -558,7 +586,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "decimals": 2,
+          "decimals": 0,
           "max": 100,
           "min": 0,
           "thresholds": {
@@ -627,7 +655,7 @@
           "refId": "A"
         }
       ],
-      "title": "GPU 0",
+      "title": "GPU 0 Util",
       "type": "gauge"
     },
     {
@@ -640,7 +668,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "decimals": 2,
+          "decimals": 0,
           "max": 100,
           "min": 0,
           "thresholds": {
@@ -709,7 +737,7 @@
           "refId": "A"
         }
       ],
-      "title": "GPU 1",
+      "title": "GPU 1 Util",
       "type": "gauge"
     }
   ],
