@@ -621,6 +621,29 @@ and by making `backup.sh` count the snapshots visible on the host and warn
 loudly when the directory is missing or empty. A backup script that silently
 omits a database is worse than one that fails.
 
+### 11c. Orphaned snapshots are never pruned
+
+Retention walks the **live** collection list from the API, so when a collection
+is deleted its snapshot directory stops being visited and simply sits there:
+
+```
+ORPHANED: hermes_memory (79 snapshots, 161M)
+live:     open-webui_files (117 snapshots, 5.1G)
+live:     open-webui_knowledge (85 snapshots, 280M)
+...
+```
+
+`hermes_memory` no longer exists in Qdrant. Its 79 snapshots will never be
+touched by any amount of retention tuning.
+
+`backup.sh` now reports these rather than deleting them. That is deliberate:
+the snapshots of a dropped collection may be the last copy of something
+deleted by accident, and a nightly backup job is the wrong place to make that
+decision unattended.
+
+Note also that each snapshot has a `.snapshot.checksum` sidecar, so a naive
+file count doubles. Count `*.snapshot` specifically.
+
 **Lesson.** "Did the pre-hook run?" and "did its output reach the archive?"
 are different questions. This one answered yes to the first for months. The
 only way to catch it is to verify from the destination: list what is actually
