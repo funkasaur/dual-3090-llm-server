@@ -1,0 +1,2112 @@
+[
+  {
+    "uid": "cfnnblayrafi8c",
+    "orgID": 1,
+    "folderUID": "cfnh9u14sk4jkc",
+    "ruleGroup": "GPU Temp",
+    "title": "CpuDieTemperatureHigh",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 86400,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "editorMode": "code",
+          "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp1\"}",
+          "instant": true,
+          "interval": "",
+          "intervalMs": 15000,
+          "legendFormat": "__auto",
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "expression",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  85
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "C"
+                ]
+              },
+              "reducer": {
+                "params": [],
+                "type": "last"
+              },
+              "type": "query"
+            }
+          ],
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "NoData",
+    "execErrState": "Error",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "__dashboardUid__": "rYdddlPWk",
+      "__panelId__": "342",
+      "description": "Ryzen 9 5950X Tdie sustained above 85C (sensor high limit is 95C). Was set to 70C, which this CPU exceeds under any sustained load. Per-die detail: temp3=Tccd1 is the inference die, temp4=Tccd2 the RAG/database die.",
+      "summary": "CpuDieTemperatureHigh"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null
+  },
+  {
+    "uid": "efnk5onm16vwgc",
+    "orgID": 1,
+    "folderUID": "cfnh9u14sk4jkc",
+    "ruleGroup": "GPU Temp",
+    "title": "GpuCoreTemperatureWarning",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 1800,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_TEMP",
+          "instant": true,
+          "interval": "",
+          "intervalMs": 15000,
+          "legendFormat": "__auto",
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "expression",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  80
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "C"
+                ]
+              },
+              "reducer": {
+                "params": [],
+                "type": "last"
+              },
+              "type": "query"
+            }
+          ],
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "NoData",
+    "execErrState": "Error",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "__dashboardUid__": "nvidia-dcgm-dashboard",
+      "__panelId__": "22",
+      "description": "GPU core sustained above 80C. The 3090 throttles near 83C; check case airflow and fan curves. Covers both cards - the previous rule watched only gpu 1.",
+      "summary": "GpuCoreTemperatureWarning"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null
+  },
+  {
+    "uid": "cfz5h890q30n4a",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuCoreTemperatureCritical",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "DCGM_FI_DEV_GPU_TEMP > 84",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "2m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "GPU core at or past the 83C throttle point. Expect clock loss and reduced tokens/sec.",
+      "summary": "GpuCoreTemperatureCritical"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "afz5h8944g1kwd",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuExporterDown",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "up{job=\"dcgm\"} == 0",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "dcgm-exporter is down. Every GPU temperature and VRAM alert is blind while this fires.",
+      "summary": "GpuExporterDown"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "efz5h891hjwg0b",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuJunctionTemperatureHigh",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "editorMode": "code",
+          "expr": "gpu_junction_temp_celsius > 90",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "GPU hotspot/junction temperature sustained above 100C. Check pump, mounting pressure and airflow.",
+      "summary": "GpuJunctionTemperatureHigh"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "cfz5h892vhvcwb",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuPowerCapNotApplied",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "DCGM_FI_DEV_POWER_USAGE > 290",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "10m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "GPU drawing above the configured 270W cap. Check: systemctl status nvidia-power-limit.service",
+      "summary": "GpuPowerCapNotApplied"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "ffz5h893hyygwc",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuTempCollectorStale",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "time() - gpu_temps_last_update_timestamp_seconds > 300",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "gpu-vram-temps.timer has not produced a reading in 5 minutes. Junction and VRAM alerts are blind while this fires.",
+      "summary": "GpuTempCollectorStale"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "25aa80fe-b41e-5389-ac13-7d2ec617b244",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuVramExhausted",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "(DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 95",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "10m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "GPU VRAM utilization is at {{ $value }}%. Only a small fraction of the 24GB remains available.",
+      "summary": "GPU VRAM almost full (Instance {{ $labels.instance }})"
+    },
+    "labels": {
+      "__converted_prometheus_rule__": "true",
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "bdc188e0-9ea9-5c77-9918-05c289a7da6d",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuVramTemperatureHigh",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_vram_temp_celsius > 95",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "2m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "GDDR6X memory temperature. GDDR6X throttles at 110C; sustained 95C+ means the thermal pads need replacing. Source: gpu-vram-temps.timer (dcgm-exporter does not expose this field).",
+      "summary": "GPU performance throttling active (Instance {{ $labels.instance }})"
+    },
+    "labels": {
+      "__converted_prometheus_rule__": "true",
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "cfz5h8926ivwge",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "GpuXidErrors",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "increase(DCGM_FI_DEV_XID_ERRORS[15m]) > 0",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "1m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "GPU reported an XID error - a hardware or driver fault, not a load issue. Check: dmesg | grep -i xid",
+      "summary": "GpuXidErrors"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "dfz5h894qx4owc",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "InferenceEngineDown",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "up{job=\"llama-swap\"} == 0",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "llama-swap is not responding; Open WebUI will fail every request.",
+      "summary": "InferenceEngineDown"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "efz5h895de7swf",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "NodeExporterDown",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "up{job=\"node\"} == 0",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "node-exporter is down. No host CPU, RAM, disk or per-CCD temperature data.",
+      "summary": "NodeExporterDown"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "dfz5h896mce0wa",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "UpsBatteryAbnormal",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "upsBaseBatteryStatus != 2",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "UPS battery status not normal (2 = normal). Check for a failed or ageing battery pack.",
+      "summary": "UpsBatteryAbnormal"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "efz5h8978th4wc",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "UpsLoadHigh",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "upsAdvanceOutputLoad > 75",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "UPS above 75% of rated capacity. Lower POWER_LIMIT_W or move load off this UPS.",
+      "summary": "UpsLoadHigh"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "ffz5h895zvawwd",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "UpsOnBattery",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "upsBaseOutputStatus != 2",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "30s",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "UPS is not on mains power (2 = onLine). Begin a graceful shutdown before the battery runs out.",
+      "summary": "UpsOnBattery"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "afz5h897xsglcf",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "UpsRuntimeLow",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "upsAdvanceBatteryRunTimeRemaining / 6000 < 5",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "1m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "UPS has under 5 minutes of runtime remaining (value is TimeTicks/6000). Shut down now.",
+      "summary": "UpsRuntimeLow"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "uid": "efnh9vuqkjy80d",
+    "orgID": 1,
+    "folderUID": "cfnh9u14sk4jkc",
+    "ruleGroup": "System utilization",
+    "title": "HostMemoryHigh",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "B",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 86400,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "clamp_min((1 - (node_memory_MemAvailable_bytes{instance=\"node-exporter:9100\", job=\"node\"} / node_memory_MemTotal_bytes{instance=\"node-exporter:9100\", job=\"node\"})) * 100, 0)",
+          "format": "time_series",
+          "instant": true,
+          "interval": "",
+          "intervalMs": 15000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "B",
+          "step": 240
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "expression",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  85
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "C"
+                ]
+              },
+              "reducer": {
+                "params": [],
+                "type": "last"
+              },
+              "type": "query"
+            }
+          ],
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "B",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "NoData",
+    "execErrState": "Error",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "__dashboardUid__": "rYdddlPWk",
+      "__panelId__": "16",
+      "description": "Host RAM above 85% of 64GB for 5 minutes. Model weights live in VRAM, so sustained host pressure usually means the RAG stack on CCD1 - Qdrant, Postgres, Tika - rather than inference.",
+      "summary": "HostMemoryHigh"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null
+  }
+]
