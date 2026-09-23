@@ -42,6 +42,22 @@ Qdrant snapshot API  ->  inside the Qdrant volume
 The live Qdrant storage directory is **excluded** from the archive. Archiving
 it would reintroduce exactly the inconsistency the snapshots exist to prevent.
 
+> **Mount the snapshots directory, or the exclusion above silently removes
+> Qdrant from your backups entirely.** Qdrant writes to `/qdrant/snapshots`,
+> which is *not* covered by a `/qdrant/storage` mount — by default it lands in
+> the container's writable layer, where no host backup can see it and a
+> `docker compose down` destroys it. This stack had 370 snapshots and 5.6 GB
+> stranded that way ([AUDIT #12](AUDIT.md#12-borgs-retention-works-its-pre-hooks-never-clean-up-after-themselves)).
+> The Compose file now mounts `./qdrant_snapshots:/qdrant/snapshots`, and
+> `backup.sh` warns if that directory is missing or empty.
+
+Verify from the destination, not the source — the only question that matters
+is whether the snapshots are *in* an archive:
+
+```bash
+borg list ::system-2026-09-23_03:00 | grep -c snapshot
+```
+
 ### The passphrase
 
 Never in the script. The original had it inline — which meant it was also
