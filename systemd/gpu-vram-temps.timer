@@ -1,0 +1,12 @@
+[Unit]
+Description=Sample GPU junction/VRAM temperatures every 30s
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30s
+# Thermal data is only useful fresh; do not replay missed runs after downtime.
+Persistent=false
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
