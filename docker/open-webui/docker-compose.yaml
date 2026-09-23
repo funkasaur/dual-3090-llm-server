@@ -1,0 +1,77 @@
+# Frontend + relational store.
+#
+# open-webui sits on CCD0 next to the inference engine so UI/API round trips
+# stay on one die. Postgres sits on CCD1 with the rest of the RAG stack.
+
+services:
+  webui-postgres:
+    image: postgres:16-alpine
+    container_name: webui-postgres
+    cpuset: "8-15,24-31"        # CCD1
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    # Deliberately NOT published to the host. Reachable only over ai-net.
+    networks:
+      - ai-net
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    cpuset: "5-6,21-22"         # CCD0, web/ingress zone
+    depends_on:
+      webui-postgres:
+        condition: service_healthy
+    networks:
+      - ai-net
+    ports:
+      - "3030:8080"
+    volumes:
+      - open-webui:/app/backend/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@webui-postgres:5432/${POSTGRES_DB}
+
+      - WEB_SEARCH_RESULT_COUNT=5
+      - RAG_SYSTEM_CONTEXT=True
+
+      # --- Vector store ---
+      - VECTOR_DB=qdrant
+      - QDRANT_URI=http://qdrant:6333
+
+      # --- Embeddings (Infinity, CPU) ---
+      - RAG_EMBEDDING_ENGINE=openai
+      - RAG_EMBEDDING_OPENAI_API_BASE_URL=http://infinity-embed:7997/v1
+      - RAG_OPENAI_API_KEY=${RAG_OPENAI_API_KEY}
+      - RAG_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5
+
+      # --- Reranking (Infinity, GPU) ---
+      - RAG_RERANKING_ENGINE=external
+      - RAG_EXTERNAL_RERANKER_URL=http://infinity-rerank:7998/rerank
+      - RAG_EXTERNAL_RERANKER_API_KEY=${RAG_EXTERNAL_RERANKER_API_KEY}
+      - RAG_RERANKING_MODEL=BAAI/bge-reranker-v2-m3
+
+      # --- Document extraction ---
+      - CONTENT_EXTRACTION_ENGINE=tika
+      - TIKA_SERVER_URL=http://tika:9998
+    restart: unless-stopped
+
+volumes:
+  open-webui: {}
+
+networks:
+  ai-net:
+    external: true

@@ -1,0 +1,14 @@
+[Unit]
+Description=Borg backup of host config and container data
+After=network-online.target docker.service
+Wants=network-online.target
+# Do not start a backup if the repository volume is not mounted.
+RequiresMountsFor=/mnt/storage
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup.sh
+# Backups are I/O heavy; keep them off the inference cores and deprioritised.
+CPUAffinity=8-15 24-31
+IOSchedulingClass=idle
+Nice=19

@@ -1,0 +1,25 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    cpuset: "8-15,24-31"        # CCD1
+    restart: unless-stopped
+    networks:
+      - ai-net
+    ports:
+      - "6333:6333"   # REST
+      - "6334:6334"   # gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      # Qdrant has no auth by default. If you expose these ports beyond a
+      # trusted LAN, set an API key and require it:
+      # - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
+
+networks:
+  ai-net:
+    external: true

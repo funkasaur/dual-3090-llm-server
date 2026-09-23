@@ -1,0 +1,14 @@
+[Unit]
+Description=Set NVIDIA GPU power limits
+Wants=nvidia-persistenced.service
+After=nvidia-persistenced.service
+ConditionPathExistsGlob=/dev/nvidia[0-9]*
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=POWER_LIMIT_W=270
+ExecStart=/usr/local/bin/set-gpu-power.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+# Embeddings and reranking.
+#
+# Split deliberately: the embedding model is small and runs on CPU so it never
+# competes for VRAM with the LLM. The reranker is heavier and runs on GPU 0,
+# where it shares VRAM with the inference engine — keep an eye on headroom if
+# you load a 48GB-spanning model.
+
+services:
+  infinity-embed:
+    image: michaelf34/infinity:latest-cpu
+    container_name: infinity-embed
+    cpuset: "8-15,24-31"        # CCD1
+    restart: unless-stopped
+    networks:
+      - ai-net
+    ports:
+      - "7997:7997"
+    volumes:
+      - ./model_cache:/app/.cache
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - HF_HOME=/app/.cache
+      # Matches the 8 physical cores of CCD1.
+      - OMP_NUM_THREADS=8
+    command: v2 --model-id nomic-ai/nomic-embed-text-v1.5 --engine optimum --device cpu --dtype auto --port 7997
+
+  infinity-rerank:
+    image: michaelf34/infinity:latest
+    container_name: infinity-rerank
+    cpuset: "8-15,24-31"        # CCD1
+    restart: unless-stopped
+    networks:
+      - ai-net
+    ports:
+      - "7998:7998"
+    volumes:
+      - ./model_cache:/app/.cache
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - HF_HOME=/app/.cache
+      - CUDA_VISIBLE_DEVICES=0
+    command: v2 --model-id BAAI/bge-reranker-v2-m3 --engine torch --device cuda --dtype float16 --port 7998
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  ai-net:
+    external: true

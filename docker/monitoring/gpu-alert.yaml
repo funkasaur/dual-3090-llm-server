@@ -1,0 +1,146 @@
+groups:
+  - name: RTX_3090_GPU_Alerts
+    rules:
+
+      # --- Thermals -----------------------------------------------------
+      #
+      # PATCH: the original rule fired at 65C and described that as "close to
+      # thermal throttling limits". A 3090 core does not begin to throttle
+      # until ~83C; 65C under sustained inference is entirely normal, so the
+      # alert was noise. Split into a real warning and a critical.
+      - alert: GpuCoreTemperatureHigh
+        expr: dcgm_fi_dev_gpu_temp > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GPU {{ $labels.gpu }} core at {{ $value }}C"
+          description: "Sustained above 80C. The 3090 core throttles near 83C; check case airflow and fan curves."
+
+      - alert: GpuCoreTemperatureCritical
+        expr: dcgm_fi_dev_gpu_temp > 84
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "GPU {{ $labels.gpu }} core at {{ $value }}C"
+          description: "At or past the throttle point. Expect clock loss and reduced tokens/sec."
+
+      # The failure mode that actually kills 3090s. GDDR6X memory junction
+      # temperature runs far hotter than the core and throttles at 110C.
+      # A card that looks fine at 70C core can be at 100C+ on memory,
+      # especially on the backside modules of a triple-slot Strix.
+      - alert: GpuMemoryJunctionHot
+        expr: dcgm_fi_dev_memory_temp > 95
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GPU {{ $labels.gpu }} VRAM junction at {{ $value }}C"
+          description: "GDDR6X throttles at 110C. If this is routine, the thermal pads need replacing."
+
+      # --- VRAM ---------------------------------------------------------
+      #
+      # PATCH: the original expression was
+      #     (dcgm_fi_dev_fb_used / dcgm_fi_dev_fb_free) * 100 > 95
+      # which divides used by FREE rather than by TOTAL. On a card with 20GB
+      # used and 4GB free that evaluates to 500%, so the alert fired
+      # permanently; conversely it could never express "95% full" correctly.
+      - alert: GpuVramExhausted
+        expr: >-
+          (dcgm_fi_dev_fb_used / (dcgm_fi_dev_fb_used + dcgm_fi_dev_fb_free)) * 100 > 95
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GPU {{ $labels.gpu }} VRAM {{ $value | printf \"%.1f\" }}% full"
+          description: "Little headroom left on this card. Further model loads or long contexts will OOM."
+
+      # --- Throttling ---------------------------------------------------
+      #
+      # PATCH: the original rule was `dcgm_fi_dev_clock_throttle_reasons > 0`.
+      # That field is a BITMASK, and bit 0 (0x1) is simply "GPU is idle", so
+      # the rule fired continuously on an idle box. Bit 2 (0x4) is
+      # "SW power cap", which is also expected here because we deliberately
+      # cap the cards at 270W.
+      #
+      #   0x01 GpuIdle          0x02 AppClocksSetting   0x04 SwPowerCap
+      #   0x08 HwSlowdown       0x10 SyncBoost          0x20 SwThermalSlowdown
+      #   0x40 HwThermalSlowdown                        0x80 HwPowerBrakeSlowdown
+      #
+      # PromQL has no bitwise AND, but the benign bits (0x1|0x2|0x4) sum to 7,
+      # so `>= 8` is exactly equivalent to "at least one bit of 0x08 or higher
+      # is set" — i.e. a real hardware or thermal slowdown.
+      - alert: GpuHardwareThrottling
+        expr: dcgm_fi_dev_clock_throttle_reasons >= 8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GPU {{ $labels.gpu }} hardware/thermal throttling (mask {{ $value }})"
+          description: "Clocks are being cut by a thermal or hardware protection mechanism, not by the configured power cap."
+
+      # --- Liveness -----------------------------------------------------
+      - alert: GpuExporterDown
+        expr: up{job="dcgm"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "dcgm-exporter is down"
+          description: "No GPU telemetry. Thermal and power alerts above are blind while this is firing."
+
+      - alert: InferenceEngineDown
+        expr: up{job="llama-swap"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "llama-swap is not responding"
+          description: "The inference endpoint is unreachable; Open WebUI will fail every request."
+
+  # ---------------------------------------------------------------------
+  # UPS. Metric names and values below were read off a live CyberPower
+  # RMCARD205 via the snmp-exporter 'cyberpower' module.
+  # ---------------------------------------------------------------------
+  - name: UPS_Alerts
+    rules:
+      # upsBaseOutputStatus: 2 = onLine. Anything else means the UPS is not
+      # cleanly passing mains through.
+      - alert: UpsOnBattery
+        expr: upsBaseOutputStatus != 2
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "UPS {{ $labels.instance }} is not on mains power"
+          description: "Output status {{ $value }}. Begin a graceful shutdown before the battery runs out."
+
+      # upsBaseBatteryStatus: 2 = normal.
+      - alert: UpsBatteryAbnormal
+        expr: upsBaseBatteryStatus != 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "UPS {{ $labels.instance }} battery not normal"
+          description: "Battery status {{ $value }}. Check for a failed or ageing battery pack."
+
+      # Load as a percentage of the card's rated output (upsAdvanceIdentLoadPower).
+      - alert: UpsLoadHigh
+        expr: upsAdvanceOutputLoad > 75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "UPS {{ $labels.instance }} at {{ $value }}% load"
+          description: "Approaching rated capacity. Lower the GPU power caps (POWER_LIMIT_W) or move load off this UPS."
+
+      - alert: UpsRuntimeLow
+        expr: upsAdvanceBatteryRunTimeRemaining / 6000 < 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "UPS {{ $labels.instance }} has under 5 minutes of runtime"
+          description: "Value is reported in TimeTicks (1/100s). Shut down now."
