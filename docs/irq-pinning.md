@@ -91,7 +91,7 @@ The point of `/proc/interrupts` is that it settles arguments. After 8.5 weeks:
 
 ```
 $ grep -iE 'nvidia|nvme|enp' /proc/interrupts   # summed across all CPUs
- 53: total=1199284540   enp42s0     effective=25   <- 10GbE, on CCD1. Good.
+ 53: total=1199284540   enp42s0     effective=25   <- 2.5GbE NIC, on CCD1. Good.
  54: total=24434220     nvme1q1     effective=0    <- inference core
  55: total=4047786      nvme1q2     effective=1    <- inference core
  56: total=3855576      nvme1q3     effective=2    <- inference core

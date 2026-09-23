@@ -293,6 +293,7 @@ The prose description of this build, checked against the machine:
 | "**1350W limit** enforced via `nvidia-smi` power caps" | 1350W is the UPS's rated output (`upsAdvanceIdentLoadPower`). The `nvidia-smi` cap is **270W per card**. Two unrelated numbers |
 | `--split-mode graph`: "both cards calculate **identical layers** simultaneously, pooling 48GB" | Self-contradictory — duplicating layers would halve usable VRAM, not pool it. Graph mode splits the compute graph across devices |
 | `cloudflared` on CCD0 ingress zone | Runs on CCD1 (`8-15,24-31`), with a comment reading `# Strictly on CCD0` |
+| **Intel X520-DA2 10GbE SFP+ over OM4 fiber** to a Brocade ICX 7250-24P | No such card is installed. The active link is the **onboard Realtek Killer E3000 2.5GbE** (`enp42s0`, 2500Mb/s, `Port: Twisted Pair` — copper, not fiber). Two triple-slot Strix 3090s in NVLink leave no free slot, and both GPUs are already down to x8 on AM4's 16 CPU lanes |
 
 None of these change what the machine does. All of them would mislead someone
 reproducing it.
