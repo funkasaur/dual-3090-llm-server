@@ -47,9 +47,20 @@ most useful file here.
 | Cooling | Arctic Liquid Freezer III Pro 420, GPUs repasted |
 | PSU | Corsair HX1500i (ATX 3.1) |
 | UPS | CyberPower OL1500RTXL2U, RMCARD205 management card |
-| Networking | Intel X520-DA2 10GbE SFP+ over OM4 to a Brocade ICX 7250-24P |
+| Networking | Onboard Realtek Killer E3000 2.5GbE (RJ45), linked at 2500Mb/s |
 | Chassis | NZXT H9 Flow (2025) |
 | OS | Ubuntu 24.04.4 LTS, kernel 6.8 |
+
+> **No expansion slots remain.** Two triple-slot ROG Strix 3090s bridged with
+> NVLink physically occupy everything, and AM4 only has 16 CPU PCIe lanes to
+> begin with — both cards run at **x8** (`current_link_width: 8`, max 16) once
+> the second slot is populated. There is nowhere to put a 10GbE NIC, so the
+> box uses the onboard 2.5GbE. In practice that is not the bottleneck: model
+> weights live on local NVMe, and 2.5Gb is ample for API traffic and the
+> Cloudflare tunnel.
+>
+> If you are planning a similar build and want 10GbE, budget for it on a
+> platform with more lanes (Threadripper / EPYC / SP3) or accept a single GPU.
 
 ---
 
