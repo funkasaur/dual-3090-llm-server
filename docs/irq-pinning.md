@@ -109,6 +109,81 @@ Two conclusions, neither of them the expected one:
 2. **The real traffic on the inference cores is NVMe**, and it is bound there
    by the kernel.
 
+## A big total is not a high rate
+
+1.2 billion interrupts from one NIC looks alarming until you divide by the
+uptime it accumulated over:
+
+```
+1,199,284,540 interrupts / 60.7 days = ~229 per second
+```
+
+Measured live rather than inferred, on an otherwise idle machine:
+
+```
+$ # hardware interrupts, sampled over 10s
+enp42s0    80.7 int/s    cpus: cpu25=807
+
+$ # NET_RX softirqs, sampled over 10s: 2358 total (236/s)
+   cpu25   1705   (72%)   <- the NIC's CPU, on CCD1
+   cpu8-15, 24-30   648   <- container veth traffic, also CCD1
+   cpu3, cpu19        5   (0.2%)  <- inference cores
+
+$ mpstat -P 25
+CPU    %usr   %nice    %sys  %iowait    %irq   %soft   %idle
+ 25    0.99    0.00    0.99     0.00    0.00    0.00   98.02
+```
+
+At ~230/s with a handler in the low microseconds, the NIC costs roughly
+**0.05% of one core** — and that core is on CCD1. Five softirqs out of 2,358
+touched the inference zone, and those were container loopback traffic, not the
+NIC. The hard interrupt never goes near CCD0.
+
+**Measure rates, not totals.** `/proc/interrupts` counters are cumulative
+since boot, so on a long-lived machine every number looks enormous. Sample
+twice and subtract:
+
+```bash
+python3 - <<'EOF'
+import time
+def snap():
+    return {p[-1]: sum(int(x) for x in p[1:33])
+            for p in (l.split() for l in open('/proc/interrupts'))
+            if p and p[0].rstrip(':').isdigit()}
+a = snap(); time.sleep(10); b = snap()
+for dev in sorted(b, key=lambda d: b[d] - a.get(d, 0), reverse=True)[:10]:
+    rate = (b[dev] - a.get(dev, 0)) / 10
+    if rate: print(f"{dev:12s} {rate:9.1f} int/s")
+EOF
+```
+
+### What you can actually tune on a cheap NIC
+
+Not much, as it turns out. This one is an onboard Realtek:
+
+```
+$ ethtool -c enp42s0          # interrupt coalescing
+netlink error: Operation not supported
+$ ethtool -l enp42s0          # RSS / multi-queue
+netlink error: Operation not supported
+$ grep -c enp42s0 /proc/interrupts
+1                             # single IRQ — nothing to spread
+```
+
+No coalescing knobs, no receive-side scaling, one interrupt line. The only
+lever is *placement*, which the `irqbalance` CCD0 ban already handles.
+
+If a single-queue NIC ever did saturate its one CPU, the fix is **RPS**
+(Receive Packet Steering), which spreads softirq *processing* across other
+cores while the hardware interrupt stays where it is:
+
+```bash
+# Spread NET_RX across CCD1 only (cpus 8-15, 24-31)
+echo 'ff00ff00' > /sys/class/net/enp42s0/queues/rx-0/rps_cpus
+```
+
+Worth knowing about. Not worth doing at 98% idle.
+
 ## Managed interrupts: the part you cannot fix
 
 ```bash
