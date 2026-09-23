@@ -1,5 +1,191 @@
 [
   {
+    "uid": "afz5mwwjnlo1sd",
+    "orgID": 1,
+    "folderUID": "cfnh9u14sk4jkc",
+    "ruleGroup": "GPU Temp",
+    "title": "CcdTemperatureHigh",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 86400,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=~\"temp3|temp4\"}, \"die\",\"CCD0-inference\",\"sensor\",\"temp3\"), \"die\",\"CCD1-rag\",\"sensor\",\"temp4\")",
+          "instant": true,
+          "interval": "",
+          "intervalMs": 15000,
+          "legendFormat": "__auto",
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "expression",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  85
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "C"
+                ]
+              },
+              "reducer": {
+                "params": [],
+                "type": "last"
+              },
+              "type": "query"
+            }
+          ],
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "NoData",
+    "execErrState": "Error",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "A Ryzen CCD sustained above 85C (Tdie sensor high limit is 95C). The die label says which: CCD0-inference runs the llama-swap cores 0-4, CCD1-rag runs Postgres, Qdrant and the embedding stack on cores 8-15.",
+      "summary": "CcdTemperatureHigh"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null
+  },
+  {
+    "uid": "cfz5mwwk7kutcf",
+    "orgID": 1,
+    "folderUID": "cfnh9u14sk4jkc",
+    "ruleGroup": "GPU Temp",
+    "title": "CcdTemperatureImbalance",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 86400,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "editorMode": "code",
+          "expr": "abs(avg_over_time(node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp3\"}[1h]) - ignoring(sensor) avg_over_time(node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp4\"}[1h]))",
+          "instant": true,
+          "interval": "",
+          "intervalMs": 15000,
+          "legendFormat": "__auto",
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "expression",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  25
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "C"
+                ]
+              },
+              "reducer": {
+                "params": [],
+                "type": "last"
+              },
+              "type": "query"
+            }
+          ],
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "noDataState": "NoData",
+    "execErrState": "Error",
+    "for": "30m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "The two CCDs differ by more than 25C averaged over an hour. A steady ~11C gap is normal on this machine (measured: Tccd1 26.3C avg, Tccd2 37.9C avg at idle), so a much larger one points at cooler mounting, pump flow or a badly skewed workload rather than a hot die. Averaged because the raw Zen 3 CCD sensors swing several degrees at idle.",
+      "summary": "CcdTemperatureImbalance"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null
+  },
+  {
     "uid": "cfnnblayrafi8c",
     "orgID": 1,
     "folderUID": "cfnh9u14sk4jkc",
