@@ -289,7 +289,7 @@ The prose description of this build, checked against the machine:
 | GPU IRQs pinned to **core 5** (threads 5, 17) | Script pins to **core 7** (threads 7, 23) |
 | Inference on "cores 0-4 (**threads 12-16**)" | Threads **0-4, 16-20** |
 | Engine is `ik-llama-server` | `llama-swap` **fronting** `ik-llama-server` |
-| Backups via **Veeam** | Nightly automated pipeline is **Borg**; Veeam Agent is installed and running alongside it |
+| Backups via **Veeam** | Both run. Borg nightly at 03:00 via systemd (verified succeeding); Veeam image-level from a Windows B&R server (see [#10](#9-the-veeam-job-had-not-run-in-three-days)) |
 | "**1350W limit** enforced via `nvidia-smi` power caps" | 1350W is the UPS's rated output (`upsAdvanceIdentLoadPower`). The `nvidia-smi` cap is **270W per card**. Two unrelated numbers |
 | `--split-mode graph`: "both cards calculate **identical layers** simultaneously, pooling 48GB" | Self-contradictory — duplicating layers would halve usable VRAM, not pool it. Graph mode splits the compute graph across devices |
 | `cloudflared` on CCD0 ingress zone | Runs on CCD1 (`8-15,24-31`), with a comment reading `# Strictly on CCD0` |
@@ -343,6 +343,110 @@ friendly.
 
 ---
 
+## 9. The Veeam job had not run in three days
+
+**Severity: high — and nobody had noticed, including the operator.**
+
+The working assumption going into this audit was that Borg had been retired and
+Veeam was now the only backup. The filesystem said otherwise, in both
+directions.
+
+Borg ran successfully six hours before this was written:
+
+```
+$ systemctl status borg-backup.service
+   Process: 2033170 ExecStart=/usr/local/bin/backup.sh (code=exited, status=0/SUCCESS)
+   Finished borg-backup.service - Wed 2026-09-23 03:00:30 EDT
+   All archives: 2.20 TB  ->  102.75 GB deduplicated
+```
+
+Veeam did not:
+
+```
+2026-09-12 05:55   625 GB   ...D2026-09-12T045809_D401.vbk   full
+2026-09-13 04:02   1.3 GB   ...D2026-09-13T040023_09BE.vib   incremental
+2026-09-19 05:57   700 GB   ...D2026-09-19T045428_168D.vbk   full
+2026-09-20 04:02   2.5 GB   ...D2026-09-20T040014_E46A.vib   incremental
+                            <- nothing for Sep 21, 22, or 23
+```
+
+The established pattern is a weekly full on Saturdays with daily incrementals.
+Three consecutive daily runs are missing. Retention removes *old* restore
+points, never recent ones, so this is missed or failed runs — and the cause is
+on the Windows B&R side, not on this host.
+
+**The dangerous part is not the outage. It is the belief.** The operator's
+mental model was "Borg is gone, Veeam covers me." The reality was the exact
+inverse: the layer assumed dead was the only one working, and the layer assumed
+healthy had been silent for three days. Had that belief been acted on — by
+disabling the Borg timer — the machine would have had no backups at all, and
+nothing would have reported it.
+
+**Lesson.** Backup verification has to be external to the backup. A job that
+stops running produces no logs, no alerts and no errors; its failure signature
+is an absence, and absences are invisible unless something is specifically
+watching for them. Check freshness of the *output*, not health of the process:
+
+```bash
+# Alert if the newest restore point is older than ~36h
+find /mnt/storage/<repo> -name '*.vib' -o -name '*.vbk' -mmin -2160 | grep -q . \
+  || echo "NO RECENT VEEAM RESTORE POINT"
+```
+
+### 9a. The Veeam repository is on the machine being backed up
+
+`/mnt/storage` is exported over Samba as `[WindowsShare]` and is where the
+Windows B&R server writes its repository. It is also a local filesystem on the
+host being imaged.
+
+That is a legitimate setup for fast local restores, and it is *not* a second
+copy. A dead drive, a bad `rm`, or ransomware takes the server and its image
+backups in the same event. Veeam's immutability service is running
+(`veeamimmurepo.service`), which helps against the third case but not the
+first two. If only one copy leaves this box, it should be this one.
+
+---
+
+## 10. The freeze/thaw scripts could strand the stack
+
+**Severity: medium — low probability, high blast radius.**
+
+```bash
+# pre-freeze.sh
+docker stop webui-postgres open-webui qdrant
+# post-thaw.sh
+docker start webui-postgres qdrant open-webui
+```
+
+They work — container timestamps confirm an ~11 second freeze window on the
+Sep 20 run. Three problems nonetheless:
+
+**Stop order is inverted.** `webui-postgres` goes down before `open-webui`, so
+the UI spends the shutdown window erroring against a database that has already
+left. Stop dependents first; start them last. The *start* order in post-thaw is
+already correct, which suggests the stop order was simply not thought about.
+
+**The default 10s stop timeout can defeat the purpose.** `docker stop` sends
+SIGTERM, waits, then SIGKILLs. The Postgres image maps SIGTERM to a fast
+shutdown, which still has to complete a checkpoint. On a database this size a
+SIGKILL partway through is plausible — producing precisely the inconsistent
+data directory that stopping the container was meant to prevent. The patched
+script uses `-t 60` and warns if any container exits 137 (SIGKILL), so a
+too-short timeout reports itself instead of silently degrading the backup.
+
+**Nothing thaws the stack if the job dies.** If Veeam fails, times out, or the
+network drops between freeze and thaw, post-thaw never runs — and
+`restart: unless-stopped` does **not** restart an explicitly stopped container.
+Postgres, Qdrant and the UI stay down until a human notices. `pre-freeze.sh`
+now arms a `systemd-run --on-active=30min` transient timer that thaws
+unconditionally, and `post-thaw.sh` cancels it on the happy path.
+
+Also added: both scripts log to `/var/log/veeam-freeze.log` with timings, and
+post-thaw waits for health checks to settle rather than treating "`docker start`
+returned 0" as proof the stack works.
+
+---
+
 ## Summary
 
 | # | Finding | Severity | Status |
@@ -355,9 +459,12 @@ friendly.
 | 6 | Stale duplicate scripts | Low | Excluded; delete from host |
 | 7 | Documentation drift | Low | Corrected |
 | 8 | Anonymous Grafana; SNMP community string; unauthenticated Qdrant | Low | Documented |
+| 9 | Veeam had not produced a restore point in 3 days | High | **Open — check the B&R job** |
+| 10 | Freeze/thaw could strand the stack; unsafe stop order and timeout | Medium | Fixed |
 
-The pattern worth taking away: **five of these eight were invisible.** The
+The pattern worth taking away: **seven of these ten were invisible.** The
 service that failed, the alerts that never loaded, the cpuset that was half
 what it looked like, the pruning that never happened, the pinning that reset
-on module reload — all of them presented as working systems. The things that
+on module reload, the backup job that simply stopped running — all of them
+presented as working systems. The things that
 break loudly get fixed. Build the check for the things that don't.
