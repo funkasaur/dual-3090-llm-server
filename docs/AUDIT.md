@@ -457,11 +457,21 @@ That needs roughly one full's worth of free space. There is 405 GB, and a full
 is ~700 GB. The job cannot complete and will not be able to until the
 repository has headroom.
 
-The retention policy and the volume size are simply incompatible. Fixes, in
-rough order of preference: move the Veeam repository off this box entirely
-(see [10a](#9a-the-veeam-repository-is-on-the-machine-being-backed-up)),
-reduce retained restore points, switch from synthetic fulls to
-forever-forward incremental, or add capacity.
+The job retains `RetainCycles=7` restore points with `RetainDays=30`, and
+synthetic fulls on Saturdays. That policy and this volume are incompatible.
+Options, in rough order of how well they fit a fixed-size repository:
+
+1. **Switch to forever-forward incremental** — drop synthetic fulls entirely.
+   Veeam then merges the oldest increment into the single full each run, so
+   only ever one full exists and the ~700 GB of transient headroom stops being
+   needed at all. Best fit for a repository that cannot grow.
+2. **Reduce `RetainCycles`** until only one full is retained. With the older
+   625 GB full pruned, free space goes from 405 GB to ~1 TB, which is
+   comfortably enough to build a synthetic full.
+3. **Move the repository off this box**, which also fixes
+   [10a](#9a-both-backup-systems-share-one-failure-domain).
+4. Add capacity — the drive is already 1.8 TB and 77% full, so this only
+   defers the question.
 
 **The dangerous part is not the outage. It is the belief.** The operator's
 mental model was "Borg is gone, Veeam covers me." The reality was the exact
@@ -481,17 +491,40 @@ find /mnt/storage/<repo> -name '*.vib' -o -name '*.vbk' -mmin -2160 | grep -q . 
   || echo "NO RECENT VEEAM RESTORE POINT"
 ```
 
-### 9a. The Veeam repository is on the machine being backed up
+### 9a. Both backup systems share one failure domain
 
 `/mnt/storage` is exported over Samba as `[WindowsShare]` and is where the
-Windows B&R server writes its repository. It is also a local filesystem on the
-host being imaged.
+Windows B&R server writes its repository. It is a dedicated NVMe, separate
+from the OS drive:
 
-That is a legitimate setup for fast local restores, and it is *not* a second
-copy. A dead drive, a bad `rm`, or ransomware takes the server and its image
-backups in the same event. Veeam's immutability service is running
-(`veeamimmurepo.service`), which helps against the third case but not the
-first two. If only one copy leaves this box, it should be this one.
+```
+nvme1n1  1.8T  WD_BLACK SN850X  ->  /              (OS, LVM)
+nvme0n1  1.8T  WD_BLACK SN850X  ->  /mnt/storage   (backups)
+```
+
+That separation is worth having, and it does real work: a failed boot drive
+leaves the image backups intact, which is exactly the scenario bare-metal
+restore exists for.
+
+The gap is narrower than "backups on the same disk as the system", but it is
+still there — **both backup systems live on that one drive**:
+
+```
+/mnt/storage/borg/system   92 GB   <- Borg, file-level
+/mnt/storage/borg/veeam    1.3 TB  <- Veeam, image-level
+```
+
+Two independent backup tools, deliberately chosen to fail independently,
+sharing a single point of failure. If `nvme0n1` dies, both layers die in the
+same instant and the only surviving copy of anything is the live data on the
+OS drive. Every other failure that reaches the machine — theft, fire, a PSU
+event taking both drives, ransomware reaching the SMB share, a mistaken `rm`
+on `/mnt/storage` — has the same shape.
+
+`veeamimmurepo.service` is running, which helps against the ransomware case
+specifically. Nothing here helps against losing the machine. This is a solid
+local restore tier and not an off-site copy, which is the one thing the setup
+does not have.
 
 ---
 
