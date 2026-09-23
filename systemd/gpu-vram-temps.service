@@ -1,0 +1,19 @@
+# Samples GDDR6X junction/memory temperatures into node-exporter's textfile
+# collector. dcgm-exporter does not expose these fields, and on a 3090 memory
+# temperature is the number that actually predicts failure.
+
+[Unit]
+Description=Export GPU junction/VRAM temperatures for Prometheus
+ConditionPathExistsGlob=/dev/nvidia[0-9]*
+
+[Service]
+Type=oneshot
+# Deliberately NOT RemainAfterExit=yes: this is driven by a timer, and systemd
+# treats `start` on an already-active oneshot as a no-op, so the unit must
+# actually re-execute each time.
+RemainAfterExit=no
+ExecStart=/usr/local/bin/gpu-vram-temps.sh
+# Sampling is cheap but it is a root process touching PCI; keep it off the
+# inference cores and out of the way.
+CPUAffinity=8-15 24-31
+Nice=10

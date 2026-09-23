@@ -1,20 +1,18 @@
-# Observability stack. Everything here is on CCD1 so that scraping,
-# TSDB compaction and dashboard rendering never touch the inference cores.
-
 services:
+  # 1. The Database (Stores metrics)
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    cpuset: "8-15,24-31"        # CCD1
+    cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
     ports:
       - "2090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      # PATCH: the alert rules file existed but was never mounted, so none of
-      # the GPU alerts were ever loaded. See docs/AUDIT.md.
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - ./gpu-alert.yaml:/etc/prometheus/gpu-alert.yaml:ro
       - prom_data:/prometheus
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -22,19 +20,16 @@ services:
     networks:
       - ai-net
 
+  # 2. The Dashboard (Visualization)
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    cpuset: "8-15,24-31"
+    cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
     ports:
       - "2000:3000"
     environment:
-      # Allows the Grafana panels to be iframed by a local dashboard page.
       - GF_SECURITY_ALLOW_EMBEDDING=true
-      # Anonymous viewer access. Safe only on a trusted LAN — do NOT expose
-      # this port through the tunnel without putting Cloudflare Access in
-      # front of it, or anyone with the URL can read your dashboards.
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     volumes:
@@ -46,31 +41,40 @@ services:
     networks:
       - ai-net
 
-  # Host telemetry: CPU, RAM, disk I/O, and per-CCD temperatures via zenpower3.
+  # 3. System Metrics (RAM, CPU, Disk)
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
-    cpuset: "8-15,24-31"
+    cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
     ports:
       - "9100:9100"
     command:
       - '--path.rootfs=/host'
+      # Picks up gpu_vram_temps.prom, written by gpu-vram-temps.timer on the
+      # host. No extra mount needed: / is already bind-mounted at /host, and
+      # the collector only ever reads.
+      - '--collector.textfile.directory=/host/var/lib/node_exporter/textfile_collector'
     pid: host
     volumes:
       - '/:/host:ro,rslave'
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - ai-net
 
-  # GPU telemetry: VRAM, utilisation, per-GPU wattage, throttle reasons.
+  # 4. GPU Metrics (VRAM, Temp, Power)
   dcgm-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:2.3.2-2.6.2-ubuntu20.04
     container_name: dcgm-exporter
-    cpuset: "8-15,24-31"
+    cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
     ports:
       - "2400:9400"
-    runtime: nvidia
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    runtime: nvidia  # Critical for GPU access
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
     cap_add:
@@ -78,37 +82,41 @@ services:
     networks:
       - ai-net
 
-  # UPS telemetry over SNMP.
+  # 5. UPS Metrics
   snmp-exporter:
     image: prom/snmp-exporter:latest
     container_name: snmp-exporter
-    cpuset: "8-15,24-31"
-    restart: unless-stopped
+    cpuset: "8-15,24-31" # Strictly on CCD1
     ports:
       - "9116:9116"
     volumes:
-      - ./auth.yml:/etc/snmp_exporter/auth.yml:ro
+      - ./auth.yml:/etc/snmp_exporter/auth.yml
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     command:
+      # Load the container's built-in 10,000+ line module file
       - "--config.file=/etc/snmp_exporter/snmp.yml"
+      # Load your custom credentials and merge them
       - "--config.file=/etc/snmp_exporter/auth.yml"
+    restart: unless-stopped
     networks:
       - ai-net
 
-  # Scrapes llama-swap's own stats endpoint for tokens/sec and cache hits.
+  # 6. Llama-swap metrics
   llamaswap-exporter:
     build: ./llamaswap-exporter
     container_name: llamaswap-exporter
-    cpuset: "8-15,24-31"
+    cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
     ports:
       - "9105:9105"
     networks:
       - ai-net
 
+
 volumes:
   prom_data:
   grafana_data:
-
 networks:
   ai-net:
     external: true
