@@ -34,6 +34,7 @@ most useful file here.
 | [`systemd/`](systemd/) | Units for the above |
 | [`docker/`](docker/) | Compose files for the whole stack, secrets parameterised |
 | [`veeam/`](veeam/) | Guest pre-freeze / post-thaw scripts (patched) |
+| [`grafana/`](grafana/) | Exported alert rules — Grafana owns alerting here |
 
 ---
 
