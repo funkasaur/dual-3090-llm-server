@@ -76,7 +76,12 @@ log "Found ${#IRQS[@]} NVIDIA IRQ(s): ${IRQS[*]}"
 sibfile="/sys/devices/system/cpu/cpu${CONDUCTOR_CORE}/topology/thread_siblings_list"
 [[ -r $sibfile ]] || die "cannot read $sibfile — is core ${CONDUCTOR_CORE} present?"
 
-IFS=',' read -r -a CONDUCTOR_THREADS < <(tr -d '\n' < "$sibfile")
+# Read the file directly rather than through `tr -d '\n'`. `read` returns 1 on
+# EOF-without-newline even when it has successfully populated the array, and
+# under `set -e` that non-zero status kills the script silently — no error, no
+# output, just an exit. Reading the sysfs file keeps its trailing newline, so
+# read returns 0.
+IFS=',' read -r -a CONDUCTOR_THREADS < "$sibfile"
 (( ${#CONDUCTOR_THREADS[@]} > 0 )) || die "could not determine SMT siblings for core ${CONDUCTOR_CORE}"
 
 log "Conductor core ${CONDUCTOR_CORE} -> threads: ${CONDUCTOR_THREADS[*]}"
@@ -181,8 +186,14 @@ for irqdir in /proc/irq/[0-9]*; do
     [[ $eff =~ ^[0-9]+$ ]] || continue
     for cpu in "${inference_cpus[@]}"; do
         if [[ $eff == "$cpu" ]]; then
+            # Skip interrupts that have never fired. Legacy ISA lines (1, 3-15)
+            # sit on CPU 0 with no device attached and zero count; listing them
+            # buries the entries that actually matter.
+            count="$(awk -v i="${irq}:" '$1 == i { s = 0; for (n = 2; n <= NF - 2; n++) s += $n; print s }' /proc/interrupts)"
+            [[ -n $count && $count -gt 0 ]] || break
+
             dev="$(awk -v i="${irq}:" '$1 == i { print $NF }' /proc/interrupts)"
-            log "  IRQ ${irq} (${dev:-unknown}) is pinned to CPU ${eff}"
+            log "  IRQ ${irq} (${dev:-unknown}) on CPU ${eff} — ${count} interrupts since boot"
             found_noise=1
             break
         fi
