@@ -34,6 +34,15 @@ QDRANT_SNAPSHOT_DIR="${QDRANT_SNAPSHOT_DIR:-/home/aiuser/qdrant/qdrant_snapshots
 
 export BORG_REPO
 
+# Check privileges BEFORE redirecting output. Without this, a non-root run dies
+# on the `exec` redirect itself with a bare shell error and no explanation,
+# because /var/log/borg-backup.log is not writable. The script also needs root
+# for /var/backup, the Borg repository and `docker exec`.
+if [[ $EUID -ne 0 ]]; then
+    printf 'ERROR: %s must run as root (try: sudo %s)\n' "${0##*/}" "$0" >&2
+    exit 1
+fi
+
 exec >> "$LOG" 2>&1
 
 log() { printf '[%s] %s\n' "$(date +'%F %T')" "$*"; }

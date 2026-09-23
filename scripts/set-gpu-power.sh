@@ -44,6 +44,15 @@ while IFS=, read -r idx min max; do
     idx="${idx// /}"; min="${min%%.*}"; max="${max%%.*}"
     min="${min// /}"; max="${max// /}"
 
+    # Cards that do not report a configurable range return "N/A" here. Feeding
+    # that to (( )) is a fatal arithmetic error under `set -e`, which would
+    # abort before the remaining GPUs were touched.
+    if [[ ! $min =~ ^[0-9]+$ || ! $max =~ ^[0-9]+$ ]]; then
+        warn "GPU ${idx}: no numeric power range reported (min='${min}' max='${max}'); skipping."
+        rc=1
+        continue
+    fi
+
     target="$POWER_LIMIT_W"
     if (( target < min )); then
         warn "GPU ${idx}: ${target}W below minimum ${min}W; using ${min}W."

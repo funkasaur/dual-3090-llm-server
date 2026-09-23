@@ -154,7 +154,8 @@ done
 # interrupts on the inference cores. See docs/irq-pinning.md.
 
 expand_cpulist() {
-    local part lo hi out=()
+    local part lo hi c
+    local -a parts=() out=()
     IFS=',' read -r -a parts <<< "$1"
     for part in "${parts[@]}"; do
         if [[ $part == *-* ]]; then
