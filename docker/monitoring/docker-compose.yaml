@@ -67,6 +67,12 @@ services:
   dcgm-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:2.3.2-2.6.2-ubuntu20.04
     container_name: dcgm-exporter
+    # dcgm-exporter stamps every metric with a Hostname label taken from the
+    # container's hostname, which Docker sets to the container ID. Recreating
+    # the container therefore changes the label, splitting the history into
+    # disjoint series and stranding any dashboard variable or alert pinned to
+    # the old value. Pinning it keeps the label stable across recreates.
+    hostname: llm-server
     cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
     ports:

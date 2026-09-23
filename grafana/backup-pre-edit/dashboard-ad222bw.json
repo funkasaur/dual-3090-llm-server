@@ -1,0 +1,777 @@
+{
+  "meta": {
+    "type": "db",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "canDelete": true,
+    "slug": "stats",
+    "url": "/d/ad222bw/stats",
+    "expires": "0001-01-01T00:00:00Z",
+    "created": "2026-08-07T18:42:24-04:00",
+    "updated": "2026-08-09T18:30:45-04:00",
+    "updatedBy": "admin",
+    "createdBy": "admin",
+    "version": 32,
+    "hasAcl": false,
+    "isFolder": false,
+    "apiVersion": "v0alpha1",
+    "folderId": 0,
+    "folderUid": "",
+    "folderTitle": "General",
+    "folderUrl": "",
+    "provisioned": false,
+    "provisionedExternalId": "",
+    "annotationsPermissions": {
+      "dashboard": {
+        "canAdd": true,
+        "canEdit": true,
+        "canDelete": true
+      }
+    }
+  },
+  "dashboard": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 692503326609408,
+    "liveNow": true,
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Resource pressure via PSI",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "max": 1,
+            "min": 0,
+            "thresholds": {
+              "mode": "percentage",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "dark-yellow",
+                  "value": 70
+                },
+                {
+                  "color": "dark-red",
+                  "value": 90
+                }
+              ]
+            },
+            "unit": "percentunit"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 3,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "displayMode": "basic",
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "maxVizHeight": 300,
+          "minVizHeight": 10,
+          "minVizWidth": 0,
+          "namePlacement": "auto",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true,
+          "sizing": "auto",
+          "text": {},
+          "valueMode": "color"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "rate(node_pressure_cpu_waiting_seconds_total{}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "CPU",
+            "range": false,
+            "refId": "A",
+            "step": 240
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "rate(node_pressure_memory_waiting_seconds_total{}[$__rate_interval])",
+            "format": "time_series",
+            "instant": true,
+            "legendFormat": "Mem",
+            "range": false,
+            "refId": "B",
+            "step": 240
+          }
+        ],
+        "title": "Pressure",
+        "type": "bargauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Overall CPU busy percentage (averaged across all cores)",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [
+              {
+                "options": {
+                  "match": "null",
+                  "result": {
+                    "text": "N/A"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "rgba(50, 172, 45, 0.97)",
+                  "value": 0
+                },
+                {
+                  "color": "rgba(237, 129, 40, 0.89)",
+                  "value": 85
+                },
+                {
+                  "color": "rgba(245, 54, 54, 0.9)",
+                  "value": 95
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 7,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.5,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": false
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto",
+          "sparkline": false,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[$__rate_interval])))",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A",
+            "step": 240
+          }
+        ],
+        "title": "CPU",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 9,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.3,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": true
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "sizing": "auto",
+          "sparkline": true,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp1\"}",
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Temp",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Real RAM usage excluding cache and reclaimable memory",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "rgba(50, 172, 45, 0.97)",
+                  "value": 0
+                },
+                {
+                  "color": "rgba(237, 129, 40, 0.89)",
+                  "value": 80
+                },
+                {
+                  "color": "rgba(245, 54, 54, 0.9)",
+                  "value": 90
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 11,
+          "y": 0
+        },
+        "id": 5,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.5,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": false
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto",
+          "sparkline": false,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "clamp_min((1 - (node_memory_MemAvailable_bytes{} / node_memory_MemTotal_bytes{})) * 100, 0)",
+            "format": "time_series",
+            "instant": true,
+            "range": false,
+            "refId": "B",
+            "step": 240
+          }
+        ],
+        "title": "RAM",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "max": 90,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 70
+                }
+              ]
+            },
+            "unit": "celsius"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 13,
+          "y": 0
+        },
+        "id": 6,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.5,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": true
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "sizing": "auto",
+          "sparkline": true,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "expr": "avg(DCGM_FI_DEV_GPU_TEMP{gpu=\"0\"})",
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "GPU 0",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "max": 90,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 70
+                }
+              ]
+            },
+            "unit": "celsius"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 15,
+          "y": 0
+        },
+        "id": 7,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.5,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": true
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "sizing": "auto",
+          "sparkline": true,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "expr": "avg(DCGM_FI_DEV_GPU_TEMP{gpu=\"1\"})",
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "GPU 1",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "decimals": 2,
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 17,
+          "y": 0
+        },
+        "id": 8,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.3,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": true
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "sizing": "auto",
+          "sparkline": true,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "expr": "avg(DCGM_FI_DEV_GPU_UTIL{gpu=\"0\"})",
+            "interval": "",
+            "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "GPU 0",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "decimals": 2,
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 2,
+          "x": 19,
+          "y": 0
+        },
+        "id": 9,
+        "options": {
+          "barShape": "flat",
+          "barWidthFactor": 0.3,
+          "effects": {
+            "barGlow": false,
+            "centerGlow": false,
+            "gradient": true
+          },
+          "endpointMarker": "point",
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "segmentCount": 1,
+          "segmentSpacing": 0.3,
+          "shape": "gauge",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "sizing": "auto",
+          "sparkline": true,
+          "textMode": "auto"
+        },
+        "pluginVersion": "13.0.1+security-01",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "editorMode": "code",
+            "expr": "avg(DCGM_FI_DEV_GPU_UTIL{gpu=\"1\"})",
+            "interval": "",
+            "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "GPU 1",
+        "type": "gauge"
+      }
+    ],
+    "preload": false,
+    "refresh": "10s",
+    "schemaVersion": 42,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "hidden": true,
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Stats",
+    "uid": "ad222bw",
+    "version": 32
+  }
+}

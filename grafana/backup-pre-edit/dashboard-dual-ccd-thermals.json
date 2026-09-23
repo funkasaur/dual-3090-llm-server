@@ -1,0 +1,376 @@
+{
+  "meta": {
+    "type": "db",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "canDelete": true,
+    "slug": "dual-ccd-thermals",
+    "url": "/d/dual-ccd-thermals/dual-ccd-thermals",
+    "expires": "0001-01-01T00:00:00Z",
+    "created": "2026-09-23T16:52:25-04:00",
+    "updated": "2026-09-23T16:52:25-04:00",
+    "updatedBy": "Anonymous",
+    "createdBy": "Anonymous",
+    "version": 1,
+    "hasAcl": false,
+    "isFolder": false,
+    "apiVersion": "v0alpha1",
+    "folderId": 0,
+    "folderUid": "",
+    "folderTitle": "General",
+    "folderUrl": "",
+    "provisioned": false,
+    "provisionedExternalId": "",
+    "annotationsPermissions": {
+      "dashboard": {
+        "canAdd": true,
+        "canEdit": true,
+        "canDelete": true
+      }
+    }
+  },
+  "dashboard": {
+    "id": 4186255639384064,
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Tccd1 is the die running the inference cores (0-7); Tccd2 runs the RAG stack (8-15). Tctl is omitted: on a 5950X it is identical to Tdie, carrying no fan-control offset. Raw Zen 3 CCD sensors swing several degrees at idle, so read trends, not spot values.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 8,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "spanNulls": true,
+              "thresholdsStyle": {
+                "mode": "dashed"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 85
+                },
+                {
+                  "color": "red",
+                  "value": 95
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp3\"}",
+            "legendFormat": "CCD0 \u2014 inference (Tccd1)",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp4\"}",
+            "legendFormat": "CCD1 \u2014 RAG/db (Tccd2)",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp1\"}",
+            "legendFormat": "Tdie (package)",
+            "range": true,
+            "refId": "C"
+          }
+        ],
+        "title": "CPU \u2014 per-CCD temperature",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Busy percentage per die. Pair with the temperature panel: inference is bursty, so CCD0 should show spikes during generation while CCD1 carries steadier background load.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 8,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "spanNulls": true
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "avg(100 - rate(node_cpu_seconds_total{mode=\"idle\",cpu=~\"0|1|2|3|4|5|6|7|16|17|18|19|20|21|22|23\"}[5m])*100)",
+            "legendFormat": "CCD0 \u2014 inference",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "avg(100 - rate(node_cpu_seconds_total{mode=\"idle\",cpu=~\"8|9|10|11|12|13|14|15|24|25|26|27|28|29|30|31\"}[5m])*100)",
+            "legendFormat": "CCD1 \u2014 RAG/db",
+            "range": true,
+            "refId": "B"
+          }
+        ],
+        "title": "CPU \u2014 per-CCD utilisation",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Junction and VRAM come from gpu-vram-temps.timer, not dcgm-exporter, which does not expose those fields. GDDR6X throttles at 110C and runs far hotter than the core \u2014 this is the number that predicts 3090 degradation.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 8,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "spanNulls": true,
+              "thresholdsStyle": {
+                "mode": "dashed"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 95
+                },
+                {
+                  "color": "red",
+                  "value": 105
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 12,
+          "x": 0,
+          "y": 9
+        },
+        "id": 3,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "DCGM_FI_DEV_GPU_TEMP",
+            "legendFormat": "GPU {{gpu}} core",
+            "range": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "gpu_junction_temp_celsius",
+            "legendFormat": "GPU {{gpu}} junction",
+            "range": true,
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "gpu_vram_temp_celsius",
+            "legendFormat": "GPU {{gpu}} VRAM (GDDR6X)",
+            "range": true,
+            "refId": "C"
+          }
+        ],
+        "title": "GPU \u2014 core / junction / VRAM",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Both cards are capped at 270W via nvidia-power-limit.service. Sustained draw above the cap means it is not being applied.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "fillOpacity": 8,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "spanNulls": true,
+              "thresholdsStyle": {
+                "mode": "dashed"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 270
+                }
+              ]
+            },
+            "unit": "watt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 12,
+          "x": 12,
+          "y": 9
+        },
+        "id": 4,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max"
+            ],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "DCGM_FI_DEV_POWER_USAGE",
+            "legendFormat": "GPU {{gpu}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "GPU \u2014 power draw vs 270W cap",
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 39,
+    "tags": [
+      "gpu",
+      "cpu",
+      "thermal"
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Dual-CCD Thermals",
+    "uid": "dual-ccd-thermals",
+    "version": 1
+  }
+}
