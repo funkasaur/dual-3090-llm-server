@@ -441,6 +441,12 @@ Postgres, Qdrant and the UI stay down until a human notices. `pre-freeze.sh`
 now arms a `systemd-run --on-active=30min` transient timer that thaws
 unconditionally, and `post-thaw.sh` cancels it on the happy path.
 
+The failsafe runs an inline `docker start`, not a call to `post-thaw.sh`.
+Veeam uploads these scripts to `/var/lib/veeam/scripts` only for the duration
+of the job session, so a path reference could point at a file that no longer
+exists by the time the timer fires. An insurance policy must not depend on the
+thing it is insuring against.
+
 Also added: both scripts log to `/var/log/veeam-freeze.log` with timings, and
 post-thaw waits for health checks to settle rather than treating "`docker start`
 returned 0" as proof the stack works.

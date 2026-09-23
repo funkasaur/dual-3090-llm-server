@@ -133,14 +133,24 @@ snapshot and a **post-thaw** script immediately after. This stack uses that
 window to stop the three stateful containers outright, which is the bluntest
 and most reliable way to get an application-consistent image.
 
-Both are in [`veeam/`](../veeam/). Install on the **Linux guest**, not the
-Veeam server:
+Both are in [`veeam/`](../veeam/). **They are stored on the Veeam backup
+server and executed on the Linux host** — the job wizard's `Browse` button
+reads the backup server's filesystem, and at job runtime Veeam uploads the
+scripts to `/var/lib/veeam/scripts` on the agent machine and runs them there
+as root.
 
-```bash
-sudo install -m 0755 veeam/pre-freeze.sh veeam/post-thaw.sh /usr/local/bin/
-```
+Copying them to `/usr/local/bin` on the Linux host achieves nothing; Veeam
+never looks there.
 
-Then point the job's guest processing settings at those paths.
+Configure at: job → **Guest Processing** → **Enable application-aware
+processing** → **Applications** → select the computer → **Edit** →
+**Scripts** → the **pre-freeze / post-thaw** fields, not the pre-job/post-job
+pair.
+
+> The Veeam server is normally Windows, so keep **LF line endings**. A CRLF
+> shebang fails with `bad interpreter: /bin/bash^M`, which aborts the job.
+
+Full details and a test procedure in [`veeam/README.md`](../veeam/README.md).
 
 Measured downtime on a real run: **~11 seconds**.
 
