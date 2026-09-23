@@ -28,6 +28,7 @@ most useful file here.
 | [`docs/inference.md`](docs/inference.md) | llama-swap + ik-llama-server, NVLink, measured throughput |
 | [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / DCGM / SNMP |
 | [`docs/backups.md`](docs/backups.md) | Two layers: Borg file-level, Veeam image-level |
+| [`docs/veeam-linux-repository.md`](docs/veeam-linux-repository.md) | Using the Linux box as a Veeam repository, and why the SMB workaround costs you |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | **Findings from auditing this setup against the live machine** |
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
 | [`systemd/`](systemd/) | Units for the above |

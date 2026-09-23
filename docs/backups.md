@@ -158,6 +158,14 @@ repository on an SMB share exported from the Linux box itself:
 
 Backup chain shape: weekly full (`.vbk`) with daily incrementals (`.vib`).
 
+> **The SMB share is a workaround for a constraint that isn't there.** Veeam
+> B&R Community Edition must run on Windows, but that restricts the backup
+> *server*, not the repository — a Linux server can be added as a repository
+> directly, no licence required. Routing through an SMB share sends every byte
+> across the network to a Windows gateway and back to the same disk, and costs
+> you both Fast Clone and immutability.
+> See [veeam-linux-repository.md](veeam-linux-repository.md).
+
 > **Note the topology.** `/mnt/storage` is a dedicated NVMe, separate from the
 > OS drive, so a failed boot disk leaves the image backups intact — which is
 > the case bare-metal restore is for. But *both* backup systems live on that
