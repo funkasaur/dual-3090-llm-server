@@ -541,6 +541,97 @@ returned 0" as proof the stack works.
 
 ---
 
+## 11. Borg's retention works. Its pre-hooks never clean up after themselves
+
+**Severity: high — the vector database was not in the backup at all.**
+
+The suspicion was that Borg was not deleting old archives. It is. The
+arithmetic settles it without needing to open the repository:
+
+```
+This archive:   136.98 GB      (one night, logical size)
+All archives:     2.20 TB      (everything retained, logical size)
+
+2.20 TB / 136.98 GB ~= 16 archives
+```
+
+Sixteen is what `--keep-daily 7 --keep-weekly 4 --keep-monthly 6` should
+retain once the windows overlap. With 118 nightly runs recorded in the log and
+no pruning, that figure would be nearer 16 TB. Deduplicated size confirms it:
+101.98 GB on 30 Aug against 102.75 GB on 23 Sep — **0.77 GB of growth in 24
+days**, and 92 GB on disk. The repository is stable.
+
+What is not stable is everything the pre-hooks create.
+
+### 11a. Postgres dumps were never pruned
+
+```
+$ ls /var/backup/postgres/ | wc -l
+117
+$ ls /var/backup/postgres/ | head -1
+pg_dumpall_2026-05-30.sql
+$ du -sh /var/backup/postgres
+2.6G
+```
+
+Every dump since the day the script was written, still on disk — and each one
+re-archived by Borg every night since. Fixed with a `PG_KEEP_DAYS` retention
+sweep (14 days by default).
+
+### 11b. Qdrant snapshots were stranded in the container
+
+This is the serious one.
+
+```
+$ docker exec qdrant find /qdrant/snapshots -name '*.snapshot' | wc -l
+370
+$ docker exec qdrant du -sh /qdrant/snapshots
+5.6G
+```
+
+370 snapshots, never pruned. But the count is the least of it — look at where
+they live:
+
+```
+$ docker inspect qdrant -f '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}'
+/home/aiuser/qdrant/qdrant_storage -> /qdrant/storage
+```
+
+`/qdrant/storage` is mounted. **`/qdrant/snapshots` is not.** Qdrant writes
+snapshots there by default, so all 5.6 GB of them sit in the container's
+writable layer, which means:
+
+- **They are not backed up.** Borg archives `/home`, and nothing in `/home`
+  contains them. The backup script was faithfully creating snapshots for
+  consistency and then archiving everything *except* the snapshots.
+- **They do not survive the container.** `docker compose down`, an image
+  update, or a `docker rm` discards the writable layer and every snapshot with
+  it.
+- **They inflate Docker's storage.** The qdrant container's writable layer is
+  5.98 GB, against a 6.19 GB virtual size — almost all of it snapshots.
+
+Combined with the earlier fix that (correctly) excludes the live
+`qdrant_storage` directory from the archive, the net effect was that **the
+vector database had no representation in the backup whatsoever.** The
+exclusion was right; the snapshots were supposed to replace it, and they never
+arrived.
+
+Fixed by mounting `./qdrant_snapshots:/qdrant/snapshots` in the Compose file,
+and by making `backup.sh` count the snapshots visible on the host and warn
+loudly when the directory is missing or empty. A backup script that silently
+omits a database is worse than one that fails.
+
+**Lesson.** "Did the pre-hook run?" and "did its output reach the archive?"
+are different questions. This one answered yes to the first for months. The
+only way to catch it is to verify from the destination: list what is actually
+*in* an archive, rather than trusting that what you created got picked up.
+
+```bash
+borg list ::system-2026-09-23_03:00 | grep -c snapshot
+```
+
+---
+
 ## Summary
 
 | # | Finding | Severity | Status |
@@ -555,8 +646,9 @@ returned 0" as proof the stack works.
 | 8 | Anonymous Grafana; SNMP community string; unauthenticated Qdrant | Low | Documented |
 | 9 | Veeam stalled: repository out of space for synthetic fulls | High | **Root cause found — needs capacity** |
 | 10 | Freeze/thaw could strand the stack; unsafe stop order and timeout | Medium | Fixed |
+| 11 | Qdrant snapshots stranded in container — vector DB absent from backups | High | Fixed (needs volume mount + cleanup) |
 
-The pattern worth taking away: **seven of these ten were invisible.** The
+The pattern worth taking away: **eight of these eleven were invisible.** The
 service that failed, the alerts that never loaded, the cpuset that was half
 what it looked like, the pruning that never happened, the pinning that reset
 on module reload, the backup job that simply stopped running — all of them

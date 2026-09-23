@@ -11,6 +11,12 @@ services:
       - "6334:6334"   # gRPC
     volumes:
       - ./qdrant_storage:/qdrant/storage
+      # PATCH: /qdrant/snapshots defaults to the container's WRITABLE LAYER,
+      # not a volume. Without this mount the snapshots your backup pre-hook
+      # creates are invisible to any host-level backup, are destroyed by
+      # `docker compose down` or an image update, and grow without bound
+      # inside the container. See docs/AUDIT.md #12.
+      - ./qdrant_snapshots:/qdrant/snapshots
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     environment:

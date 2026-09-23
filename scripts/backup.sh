@@ -27,6 +27,10 @@ PG_KEEP_DAYS="${PG_KEEP_DAYS:-14}"
 
 QDRANT_URL="${QDRANT_URL:-http://localhost:6333}"
 QDRANT_KEEP_SNAPSHOTS="${QDRANT_KEEP_SNAPSHOTS:-3}"
+# Host path backing the container's /qdrant/snapshots. Must be a real volume
+# mount, or the snapshots are stranded in the container's writable layer and
+# never reach the archive. See docker/qdrant/docker-compose.yaml.
+QDRANT_SNAPSHOT_DIR="${QDRANT_SNAPSHOT_DIR:-/home/aiuser/qdrant/qdrant_snapshots}"
 
 export BORG_REPO
 
@@ -131,6 +135,18 @@ else
         done
     done <<< "$collections"
     log "Qdrant snapshots complete."
+
+    # Fail loudly if the snapshots are not reachable on the host. A silent
+    # miss here means the vector database is not in the backup at all, which
+    # is exactly the failure this pre-hook exists to prevent.
+    if [[ -d $QDRANT_SNAPSHOT_DIR ]]; then
+        count=$(find "$QDRANT_SNAPSHOT_DIR" -name '*.snapshot' 2>/dev/null | wc -l)
+        log "Snapshots visible on host: ${count} in ${QDRANT_SNAPSHOT_DIR}"
+        (( count > 0 )) || log "WARNING: snapshot directory is empty — is /qdrant/snapshots mounted?"
+    else
+        log "WARNING: ${QDRANT_SNAPSHOT_DIR} does not exist. Qdrant snapshots are"
+        log "WARNING: stranded inside the container and are NOT being backed up."
+    fi
 fi
 
 # ---------------------------------------------------------------------------
