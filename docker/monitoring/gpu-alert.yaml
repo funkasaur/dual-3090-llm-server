@@ -1,3 +1,13 @@
+# NOTE: this file is no longer loaded by Prometheus on the reference
+# deployment. Alerting was consolidated into Grafana, which can deliver
+# notifications on its own; Prometheus rules cannot without an
+# Alertmanager, and running both meant two copies drifting apart.
+#
+# Kept because it is the better-documented form of the same rules, and it
+# is what you want if you do run an Alertmanager. To re-enable: mount it
+# into the prometheus container and restore the rule_files stanza in
+# prometheus.yml. See docs/monitoring.md.
+
 # GPU and UPS alerting rules.
 #
 # Metric names below are UPPERCASE because that is what dcgm-exporter actually
