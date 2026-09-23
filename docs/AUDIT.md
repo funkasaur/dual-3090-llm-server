@@ -175,8 +175,10 @@ userspace tool can relocate them — the binding is created by the blk-mq layer
 when the queues are allocated.
 
 This does not make the isolation worthless: banning `irqbalance` from CCD0
-still keeps *movable* interrupts away, and the 10GbE NIC — by far the largest
-single source at 1.2 billion interrupts — correctly sits on CCD1. But the
+still keeps *movable* interrupts away, and the 2.5GbE NIC — by far the largest
+single source at 1.2 billion interrupts, though see
+[the rate measurement](irq-pinning.md#a-big-total-is-not-a-high-rate) for how
+little that actually costs — correctly sits on CCD1. But the
 mental model of a "completely sterile" inference zone was not accurate, and
 the one thing the script worked hardest at was the one thing that barely
 mattered.
@@ -332,7 +334,7 @@ The prose description of this build, checked against the machine:
 | "**1350W limit** enforced via `nvidia-smi` power caps" | 1350W is the UPS's rated output (`upsAdvanceIdentLoadPower`). The `nvidia-smi` cap is **270W per card**. Two unrelated numbers |
 | `--split-mode graph`: "both cards calculate **identical layers** simultaneously, pooling 48GB" | Self-contradictory — duplicating layers would halve usable VRAM, not pool it. Graph mode splits the compute graph across devices |
 | `cloudflared` on CCD0 ingress zone | Runs on CCD1 (`8-15,24-31`), with a comment reading `# Strictly on CCD0` |
-| **Intel X520-DA2 10GbE SFP+ over OM4 fiber** to a Brocade ICX 7250-24P | No such card is installed. The active link is the **onboard Realtek Killer E3000 2.5GbE** (`enp42s0`, 2500Mb/s, `Port: Twisted Pair` — copper, not fiber). Two triple-slot Strix 3090s in NVLink leave no free slot, and both GPUs are already down to x8 on AM4's 16 CPU lanes |
+| **Intel X520-DA2 10GbE SFP+ over OM4 fiber** to a Brocade ICX 7250-24P | No such card is installed. The active link is the **onboard Realtek Killer E3000 2.5GbE** (`enp42s0`, 2500Mb/s, `Port: Twisted Pair` — copper, not fiber). Two triple-slot Strix 3090s in NVLink leave no free slot, and both GPUs are already down to x8 on AM4's 16 CPU lanes. The X520 is real, but it is in the **Veeam backup server** — its job logs enumerate `Intel(R) Ethernet 10G 2P X520 Adapter` on that host. The card got attributed to the wrong machine |
 
 None of these change what the machine does. All of them would mislead someone
 reproducing it.
@@ -414,6 +416,52 @@ The established pattern is a weekly full on Saturdays with daily incrementals.
 Three consecutive daily runs are missing. Retention removes *old* restore
 points, never recent ones, so this is missed or failed runs — and the cause is
 on the Windows B&R side, not on this host.
+
+### Root cause: the repository ran out of space
+
+The Veeam job logs name it exactly. On the 19 Sep run:
+
+```
+[19.09.2026 04:43:46]  Error  Agent: Failed to process method {Transform.CompileFIB}:
+                              There is not enough space on the disk.
+[19.09.2026 04:43:46]  Error  Asynchronous request operation has failed.
+                              [requestsize = 1056768] [offset = 412453302272]
+[19.09.2026 04:43:46]  Error     in c++: Error code: 0x00000070
+```
+
+`0x70` is `ERROR_DISK_FULL`, and `Transform.CompileFIB` is the synthetic full
+build. Session outcomes across the retained logs:
+
+| When | Mode | Status | Transferred |
+|---|---|---|---|
+| 12 Sep 05:55 | Retry | Success | 0 B |
+| 13 Sep 04:02 | Normal | Success | 656.2 GB |
+| **19 Sep 04:43** | Normal | **Failed** | 717.8 GB |
+| 19 Sep 05:57 | Retry | Success | 0 B |
+| 20 Sep 04:02 | Normal | **Warning** | 716.9 GB |
+
+The arithmetic, measured on the live volume:
+
+```
+$ df -h /mnt/storage
+/dev/nvme0n1p1  1.8T  1.4T  405G  77% /mnt/storage
+
+full backups on disk:  625 GB (12 Sep) + 700 GB (19 Sep) ≈ 1.3 TB
+free space:            405 GB
+space a new synthetic full needs:  ~700 GB
+```
+
+A synthetic full is built by merging the existing chain into a **new** full
+file, which has to exist alongside the old one before anything can be pruned.
+That needs roughly one full's worth of free space. There is 405 GB, and a full
+is ~700 GB. The job cannot complete and will not be able to until the
+repository has headroom.
+
+The retention policy and the volume size are simply incompatible. Fixes, in
+rough order of preference: move the Veeam repository off this box entirely
+(see [10a](#9a-the-veeam-repository-is-on-the-machine-being-backed-up)),
+reduce retained restore points, switch from synthetic fulls to
+forever-forward incremental, or add capacity.
 
 **The dangerous part is not the outage. It is the belief.** The operator's
 mental model was "Borg is gone, Veeam covers me." The reality was the exact
@@ -505,7 +553,7 @@ returned 0" as proof the stack works.
 | 6 | Stale duplicate scripts | Low | Excluded; delete from host |
 | 7 | Documentation drift | Low | Corrected |
 | 8 | Anonymous Grafana; SNMP community string; unauthenticated Qdrant | Low | Documented |
-| 9 | Veeam had not produced a restore point in 3 days | High | **Open — check the B&R job** |
+| 9 | Veeam stalled: repository out of space for synthetic fulls | High | **Root cause found — needs capacity** |
 | 10 | Freeze/thaw could strand the stack; unsafe stop order and timeout | Medium | Fixed |
 
 The pattern worth taking away: **seven of these ten were invisible.** The
