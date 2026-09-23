@@ -158,11 +158,13 @@ repository on an SMB share exported from the Linux box itself:
 
 Backup chain shape: weekly full (`.vbk`) with daily incrementals (`.vib`).
 
-> **Note the topology.** The Veeam repository lives on `/mnt/storage`, which is
-> a filesystem *on the machine being backed up*. It is fine for a fast local
-> restore, but it is not a second copy in any meaningful sense — one dead
-> drive takes the server and its image backups together. If you only keep one
-> off-box copy, make it this one.
+> **Note the topology.** `/mnt/storage` is a dedicated NVMe, separate from the
+> OS drive, so a failed boot disk leaves the image backups intact — which is
+> the case bare-metal restore is for. But *both* backup systems live on that
+> one drive (Borg 92 GB, Veeam 1.3 TB), so they share a single failure domain
+> despite being chosen to fail independently. It is a good local restore tier,
+> not an off-site copy. See
+> [AUDIT #10a](AUDIT.md#10a-both-backup-systems-share-one-failure-domain).
 
 ### Freezing the stack around the snapshot
 
