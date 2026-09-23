@@ -1,0 +1,23 @@
+# Pins GPU interrupts away from the inference cores.
+#
+# Ordering note: the original unit used only `After=network.target`, which
+# says nothing about the NVIDIA driver. On a cold boot the unit ran before
+# the driver had registered its interrupts, the script found none and exited
+# 1, and the pinning silently never happened. The script now waits for the
+# driver itself, and the ordering below makes that wait short.
+
+[Unit]
+Description=AI Hardware IRQ Optimizer (GPU interrupt pinning)
+Wants=nvidia-persistenced.service
+After=nvidia-persistenced.service systemd-modules-load.service local-fs.target
+ConditionPathExistsGlob=/dev/nvidia[0-9]*
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/optimize-ai.sh
+# Do not take the whole boot down if the GPUs are absent or swapped out.
+SuccessExitStatus=0
+
+[Install]
+WantedBy=multi-user.target

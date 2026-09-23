@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Secrets. Nothing matching these should ever be committed.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.crt
+auth.yml
+secrets/
+
+# Borg
+passphrase
+
+# ---------------------------------------------------------------------------
+# Runtime state produced by the stack
+# ---------------------------------------------------------------------------
+postgres-data/
+qdrant_storage/
+model_cache/
+prom_data/
+grafana_data/
+*.gguf
+*.safetensors
+
+# ---------------------------------------------------------------------------
+# Local config copies. Commit the .example, never the real one.
+# ---------------------------------------------------------------------------
+docker/llama-swap/config/config.yaml
+docker/monitoring/auth.yml
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+*.swp
+*~
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Borg backup nightly
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+# Spread load if several machines share the repository host.
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

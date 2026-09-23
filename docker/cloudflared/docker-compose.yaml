@@ -1,0 +1,27 @@
+# Zero Trust ingress. No inbound ports are opened on the host or the router:
+# cloudflared dials out to Cloudflare and traffic is delivered back down that
+# tunnel. Routes are configured in the Cloudflare dashboard, not here.
+#
+# This runs on its own bridge network rather than ai-net, so tunnel routes are
+# configured against the host's LAN address (e.g. http://10.0.0.x:3030) rather
+# than container DNS names. Putting it on ai-net instead would let you route to
+# http://open-webui:8080 directly; both work.
+#
+# Placement note: the architecture doc assigns the ingress zone to CCD0
+# (cores 5-6), but this container currently runs on CCD1 alongside the rest of
+# the support stack. cloudflared's CPU cost is negligible either way. See
+# docs/AUDIT.md.
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    cpuset: "8-15,24-31"        # CCD1
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - cloudflare-network
+
+networks:
+  cloudflare-network:
+    driver: bridge

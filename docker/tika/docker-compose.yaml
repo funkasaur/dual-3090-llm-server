@@ -1,0 +1,21 @@
+# Document text/metadata extraction for the RAG pipeline.
+
+services:
+  tika:
+    image: apache/tika:latest-full
+    container_name: tika
+    cpuset: "8-15,24-31"        # CCD1
+    restart: unless-stopped
+    environment:
+      - TIKA_JAVA_OPTS=-Xms1g -Xmx4g
+    networks:
+      - ai-net
+    ports:
+      - "9998:9998"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+networks:
+  ai-net:
+    external: true

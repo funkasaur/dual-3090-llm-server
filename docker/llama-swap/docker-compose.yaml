@@ -1,0 +1,72 @@
+# Inference engine: llama-swap fronting ik-llama-server.
+#
+# llama-swap is the model router/lifecycle manager: it listens on one port,
+# starts the right ik-llama-server process on demand, and unloads it after
+# its TTL. ik-llama-server is what actually runs the tensors.
+
+services:
+  llama-swap:
+    image: ghcr.io/mostlygeek/llama-swap:unified-cuda
+    container_name: llama-swap-unified
+
+    # PATCH: was "0-4", which is 5 logical CPUs, NOT 5 physical cores.
+    # On a 5950X, the SMT sibling of core N is N+16, so the inference zone
+    # (physical cores 0-4) is "0-4,16-20". With the old value the engine's
+    # --threads-batch 10 was oversubscribing 5 logical CPUs 2:1 during
+    # prompt processing. See docs/cpu-topology.md.
+    cpuset: "0-4,16-20"
+
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Required for NVLink / CUDA P2P between the two cards.
+    ipc: host
+    shm_size: "16gb"
+
+    command: --config /app/config/config.yaml --watch-config
+    ports:
+      - "3060:8080"
+
+    volumes:
+      - ${MODELS_DIR:-/models}:/models:ro
+      - ./config:/app/config
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - LLAMA_ATTN_ROT_DISABLE=1
+      # One OpenMP thread per physical core in the inference zone.
+      - OMP_NUM_THREADS=5
+      - OMP_PROC_BIND=close
+      - OMP_PLACES=cores
+
+    # Lets the engine mlock weights so they are never swapped out.
+    cap_add:
+      - IPC_LOCK
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/v1/models || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    networks:
+      - ai-net
+
+networks:
+  ai-net:
+    external: true
