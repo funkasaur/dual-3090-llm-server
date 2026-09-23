@@ -287,6 +287,39 @@ ls -lS /mnt/storage/<repo>/**/*.vbk | head -1
 
 ### Check both are still producing
 
+### Verified restore, 2026-09-23
+
+A backup you have never restored is a hypothesis, so this one was tested
+against a file that no longer existed anywhere on the system — one of the
+Postgres dumps pruned earlier the same day:
+
+```
+1. ARCHIVE INVENTORY
+   archives retained: 16
+   oldest: system-2026-05-30_04:46     newest: system-2026-09-23_03:00
+
+2. REPOSITORY INTEGRITY (borg check --repository-only)
+   [ OK ]  repository structure intact
+
+3. POINT-IN-TIME RECOVERY OF A DELETED FILE
+   [ OK ]  file is GONE from the live filesystem — genuine recovery test
+   [ OK ]  extracted pg_dumpall_2026-05-30.sql (15M) from a 116-day-old archive
+   [ OK ]  content looks like a valid pg_dumpall
+
+4. ROUND-TRIP ON A FILE THAT STILL EXISTS
+   [ OK ]  restored /etc/fstab is byte-identical to live copy
+```
+
+Recovering a 116-day-old file that exists nowhere else is the scenario the
+deep-history layer is for, and it is the only part of a backup system that
+cannot be inferred from configuration.
+
+**Depth is bounded by repository age, not by policy.** The retention is
+`--keep-monthly 6`, but the repository was created on 2026-05-30, so in
+September it could only offer 3.9 months. It deepens on its own until the
+monthly window fills. Read the oldest archive, not the `--keep-*` flags, when
+you want to know how far back you can actually go.
+
 ```bash
 # --- Borg ---
 systemctl status borg-backup.service       # did last night succeed?
