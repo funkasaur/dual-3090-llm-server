@@ -9,7 +9,7 @@ services:
       - "2090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./gpu-alert.yaml:/etc/prometheus/gpu-alert.yaml:ro
+      # - ./gpu-alert.yaml:/etc/prometheus/gpu-alert.yaml:ro  (Grafana owns alerting)
       - prom_data:/prometheus
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro

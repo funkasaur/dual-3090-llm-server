@@ -1,6 +1,11 @@
 # Samples GDDR6X junction/memory temperatures into node-exporter's textfile
 # collector. dcgm-exporter does not expose these fields, and on a 3090 memory
 # temperature is the number that actually predicts failure.
+#
+# This genuinely requires root: gputemps mmaps /dev/mem to read the card's PCI
+# BAR (needs CAP_SYS_RAWIO) and additionally refuses to start unless
+# geteuid()==0, so file capabilities alone will not do. Since it runs every 30
+# seconds, it is confined as tightly as that access allows.
 
 [Unit]
 Description=Export GPU junction/VRAM temperatures for Prometheus
@@ -8,12 +13,35 @@ ConditionPathExistsGlob=/dev/nvidia[0-9]*
 
 [Service]
 Type=oneshot
-# Deliberately NOT RemainAfterExit=yes: this is driven by a timer, and systemd
-# treats `start` on an already-active oneshot as a no-op, so the unit must
-# actually re-execute each time.
+# Must re-execute on every timer fire; see optimize-ai.service for why
+# RemainAfterExit=yes would make the timer a no-op.
 RemainAfterExit=no
 ExecStart=/usr/local/bin/gpu-vram-temps.sh
-# Sampling is cheap but it is a root process touching PCI; keep it off the
-# inference cores and out of the way.
+
+# --- Confinement -----------------------------------------------------------
+# CAP_SYS_RAWIO is the only capability /dev/mem access needs; everything else
+# is dropped. Note PrivateDevices is deliberately NOT set, because it would
+# hide /dev/mem and break the whole thing.
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_SYS_RAWIO
+ProtectSystem=strict
+# StateDirectory, not ReadWritePaths: under ProtectSystem=strict the whole of
+# /var is read-only, so the script's `mkdir -p` would fail on first run when
+# the directory does not exist yet. StateDirectory makes systemd create
+# /var/lib/node_exporter/textfile_collector and mark it writable, removing the
+# chicken-and-egg entirely.
+StateDirectory=node_exporter/textfile_collector
+StateDirectoryMode=0755
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+# Sampling is cheap, but keep it off the inference cores regardless.
 CPUAffinity=8-15 24-31
 Nice=10

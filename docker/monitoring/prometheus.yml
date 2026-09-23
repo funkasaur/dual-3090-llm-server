@@ -2,53 +2,42 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-# PATCH: this block did not exist. gpu-alert.yaml was written but never
-# referenced, so Prometheus loaded zero alerting rules and every GPU alert was
-# dead config. Verify after reload at /rules in the Prometheus UI.
-rule_files:
-  - /etc/prometheus/gpu-alert.yaml
-
-# Uncomment once you run an Alertmanager. Without it, rules still evaluate and
-# show up in the UI, but nothing is delivered anywhere.
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets: ['alertmanager:9093']
+# Alerting lives in Grafana, not here. Grafana can deliver notifications on its
+# own; Prometheus rules cannot without an Alertmanager, and running both meant
+# two copies of the same rules drifting apart. Re-enable this stanza if you
+# add an Alertmanager:
+#
+# rule_files:
+#   - /etc/prometheus/gpu-alert.yaml
 
 scrape_configs:
-  # Host CPU / RAM / disk I/O, plus per-CCD temperatures via zenpower3.
   - job_name: 'node'
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets: ['node-exporter:9100']  # Monitor System RAM/CPU
 
-  # GPU VRAM, utilisation, per-GPU wattage, throttle reasons.
   - job_name: 'dcgm'
     static_configs:
-      - targets: ['dcgm-exporter:9400']
+      - targets: ['dcgm-exporter:9400']  # Monitor GPU VRAM/Temp
 
-  # llama-swap's own endpoint.
-  - job_name: 'llama-swap'
-    static_configs:
-      - targets: ['llama-swap-unified:8080']
-
-  # Tokens/sec, cache hit counters, active model.
-  - job_name: 'llama-swap-activity'
-    static_configs:
-      - targets: ['llamaswap-exporter:9105']
-
-  # UPS telemetry. Replace the target IPs with your own UPS management cards.
   - job_name: 'cyberpower_ups'
     static_configs:
       - targets:
-          - 192.0.2.10    # <-- your UPS management card IP
+        - 10.0.0.114  # The IP address of the Server's UPS
+        - 10.0.0.62  # The IP address of the Desktop's UPS
     metrics_path: /snmp
     params:
-      module: [cyberpower]
-      auth: [cyberpower_v1]     # must match a key in auth.yml
+      module: [cyberpower]    # Tells the exporter to use the built-in CyberPower map
+      auth: [cyberpower_v1]   # Matches the auth block you created in snmp.yml (or use cyberpower_v1)
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: snmp-exporter:9116
+        replacement: snmp-exporter:9116  # Docker DNS name routing
+  - job_name: 'llama-swap'
+    static_configs:
+      - targets: ['10.0.0.26:3060']
+  - job_name: 'llama-swap-activity'
+    static_configs:
+      - targets: ['10.0.0.26:9105']      
