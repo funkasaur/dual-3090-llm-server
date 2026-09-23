@@ -1,16 +1,20 @@
-# Optional but recommended.
-#
 # IRQ affinity is not sticky: reloading the NVIDIA module, or anything that
-# re-enumerates the devices, drops the pinning back to the default all-CPU
-# mask with no log entry and no failed unit. Re-asserting it hourly turns a
-# silent regression into a self-healing one. The script is idempotent.
+# re-enumerates the devices, drops the pinning back to the default all-CPU mask
+# with no log entry and no failed unit. Re-asserting it turns a silent
+# regression into a self-healing one. The script is idempotent.
+#
+# OnCalendar is used rather than OnUnitActiveSec because the service is a
+# short-lived oneshot: "one hour after it last became active" is ambiguous for
+# a unit that is active for about five seconds, whereas a wall-clock schedule
+# is not.
 
 [Unit]
 Description=Re-assert GPU IRQ pinning hourly
 
 [Timer]
 OnBootSec=5min
-OnUnitActiveSec=1h
+OnCalendar=hourly
+RandomizedDelaySec=2min
 Persistent=true
 
 [Install]

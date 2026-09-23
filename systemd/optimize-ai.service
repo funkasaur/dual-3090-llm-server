@@ -1,23 +1,27 @@
 # Pins GPU interrupts away from the inference cores.
 #
-# Ordering note: the original unit used only `After=network.target`, which
-# says nothing about the NVIDIA driver. On a cold boot the unit ran before
-# the driver had registered its interrupts, the script found none and exited
-# 1, and the pinning silently never happened. The script now waits for the
-# driver itself, and the ordering below makes that wait short.
+# Ordering note: the original unit used only `After=network.target`, which says
+# nothing about the NVIDIA driver. On a cold boot the unit ran before the driver
+# had registered its interrupts, the script found none and exited 1, and the
+# pinning silently never happened. The script now waits for the driver itself,
+# and the ordering below makes that wait short.
 
 [Unit]
 Description=AI Hardware IRQ Optimizer (GPU interrupt pinning)
 Wants=nvidia-persistenced.service
 After=nvidia-persistenced.service systemd-modules-load.service local-fs.target
+# Skip cleanly (not "failed") on a machine with no NVIDIA GPUs.
 ConditionPathExistsGlob=/dev/nvidia[0-9]*
 
 [Service]
 Type=oneshot
-RemainAfterExit=yes
+# MUST be no. With RemainAfterExit=yes the unit stays "active" after its first
+# run, and systemd treats every later `start` as a no-op — so optimize-ai.timer
+# would fire hourly and do nothing at all. Verified: 3 starts produced 1 run
+# with yes, and 3 runs with no. IRQ affinity is runtime state that has to be
+# re-asserted, so the unit must actually re-execute.
+RemainAfterExit=no
 ExecStart=/usr/local/bin/optimize-ai.sh
-# Do not take the whole boot down if the GPUs are absent or swapped out.
-SuccessExitStatus=0
 
 [Install]
 WantedBy=multi-user.target
