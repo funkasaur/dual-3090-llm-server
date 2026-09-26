@@ -127,6 +127,14 @@ phase where throughput matters most.
 **Fixed** to `cpuset: "0-4,16-20"`, which makes the existing `--threads-batch 10`
 correct rather than aspirational.
 
+**Update 2026-09-26 — reverted, deliberately.** The owner moved the engine back
+to `cpuset: "0-4"` (five physical cores, one hardware thread each, siblings left
+to the host) and set `--threads-batch 5` to match, which removes the
+oversubscription the other way. Measured since: with every layer on the GPUs,
+generation uses exactly **one** busy core on both engines (the thread driving
+the GPUs), so SMT siblings buy nothing during inference. The finding stands as
+written — the old comment still misdescribed what `"0-4"` meant.
+
 **Lesson.** Always derive sibling layout from
 `/sys/devices/system/cpu/cpu*/topology/thread_siblings_list`. The `N`/`N+1`
 assumption is an Intel habit and it is wrong here.
@@ -723,12 +731,61 @@ borg list ::system-2026-09-23_03:00 | grep -c snapshot
 
 ---
 
+## 12. OpenMP pinned the whole inference server to one core
+
+**Severity: medium — load-time and host-side work confined to one core; decode unaffected.**
+
+The engine's CPU work looked single-threaded: re-quantising a tensor at model
+load ran one core at 100% for 3 minutes 39 seconds while four sat idle.
+Per-thread affinity inside the container:
+
+```
+$ grep Cpus_allowed_list /proc/$(pgrep -f ik-llama-server)/task/*/status | sort | uniq -c
+     44 ...:Cpus_allowed_list:	0
+$ grep Cpus_allowed_list /proc/1/status          # the container itself
+Cpus_allowed_list:	0-4
+```
+
+All 44 threads were allowed exactly one CPU. The container's environment set:
+
+```yaml
+- OMP_PROC_BIND=close
+- OMP_PLACES=cores
+```
+
+With binding on, libgomp pins the **main thread** to the first place when the
+library loads, and every thread the process creates afterwards — CUDA event
+handlers, HTTP workers, the re-quantisation pool — inherits that mask. The
+settings were meant to arrange OpenMP's own workers; they confined the whole
+server. Tested against the real image with a 0-4 cpuset:
+
+| Environment | Process allowed on |
+|---|---|
+| `OMP_PROC_BIND=close` + `OMP_PLACES=cores` | **0** |
+| `OMP_PROC_BIND=false` + `OMP_PLACES=cores` | 0-4 |
+| `OMP_PLACES=cores` alone | **0** — libgomp assumes binding when places are set |
+| `OMP_PROC_BIND=false` alone | 0-4 |
+| neither | 0-4 |
+
+**Impact, measured.** Load-time work went from 219 s to 48 s once fixed.
+Generation speed did not change: decode is GPU-bound and its CPU hot path is a
+single thread anyway. The cost was in model loads, prompt-cache saves and
+anything else host-side.
+
+**Fixed** with `OMP_PROC_BIND=false` (removing both variables is equivalent).
+
+**Lesson.** A CPU pinning setting is a claim about where threads run; check
+where they *do* run, per thread, from `/proc`. And an OpenMP variable does not
+stay inside OpenMP.
+
+---
+
 ## Summary
 
 | # | Finding | Severity | Status |
 |---|---|---|---|
 | 1 | GPU IRQ pinning inactive for 2 months | High | Fixed + timer |
-| 2 | `cpuset` allocating half the intended CPU | High | Fixed |
+| 2 | `cpuset` allocating half the intended CPU | High | Fixed; later reverted to physical-only by choice |
 | 3 | GPU IRQs are the wrong optimisation target | Medium | Documented, reported by script |
 | 4 | All alert rules unloaded; 3 rules also wrong | Medium | Fixed |
 | 5 | Silent backup failure modes | Medium | Fixed |
@@ -738,8 +795,9 @@ borg list ::system-2026-09-23_03:00 | grep -c snapshot
 | 9 | Veeam stalled: repository out of space for synthetic fulls | High | **Root cause found — needs capacity** |
 | 10 | Freeze/thaw could strand the stack; unsafe stop order and timeout | Medium | Fixed |
 | 11 | Qdrant snapshots stranded in container — vector DB absent from backups | High | Fixed (needs volume mount + cleanup) |
+| 12 | OpenMP env pinned the whole inference server to core 0 | Medium | Fixed |
 
-The pattern worth taking away: **eight of these eleven were invisible.** The
+The pattern worth taking away: **nine of these twelve were invisible.** The
 service that failed, the alerts that never loaded, the cpuset that was half
 what it looked like, the pruning that never happened, the pinning that reset
 on module reload, the backup job that simply stopped running — all of them

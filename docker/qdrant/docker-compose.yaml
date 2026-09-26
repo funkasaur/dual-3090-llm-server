@@ -21,7 +21,7 @@ services:
       # not a volume. Without this mount the snapshots your backup pre-hook
       # creates are invisible to any host-level backup, are destroyed by
       # `docker compose down` or an image update, and grow without bound
-      # inside the container. See docs/AUDIT.md #12.
+      # inside the container. See docs/AUDIT.md #11.
       - ./qdrant_snapshots:/qdrant/snapshots
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro

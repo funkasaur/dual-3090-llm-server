@@ -1,0 +1,13 @@
+[Unit]
+Description=Probe the loaded LLM for a silent wedge; unload it on repeated failure
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/llm-watchdog.sh
+# Only needs localhost HTTP and two small directories.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/node_exporter/textfile_collector /var/lib/llm-watchdog
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes

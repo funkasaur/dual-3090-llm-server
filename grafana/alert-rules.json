@@ -1027,6 +1027,7 @@
     "missingSeriesEvalsToResolve": 1
   },
   {
+    "id": 3,
     "uid": "25aa80fe-b41e-5389-ac13-7d2ec617b244",
     "orgID": 1,
     "folderUID": "alerting-w8d22g28kis",
@@ -1036,7 +1037,7 @@
     "data": [
       {
         "refId": "query",
-        "queryType": "prometheus",
+        "queryType": "",
         "relativeTimeRange": {
           "from": 660,
           "to": 60
@@ -1047,7 +1048,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 95",
+          "editorMode": "code",
+          "expr": "(DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 99",
           "instant": true,
           "intervalMs": 1000,
           "maxDataPoints": 43200,
@@ -1140,6 +1142,7 @@
         }
       }
     ],
+    "updated": "2026-09-23T17:55:18-04:00",
     "noDataState": "OK",
     "execErrState": "OK",
     "for": "10m",
@@ -2294,5 +2297,273 @@
       "receiver": "Funkasaur LLM Bot"
     },
     "record": null
+  },
+  {
+    "id": 21,
+    "uid": "llm-watchdog-wedged",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "InferenceEngineWedged",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "(min by (model) (llm_watchdog_tokenize_ok) == 0) or (increase(llm_watchdog_unloads_total[10m]) > 0)",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-26T01:33:53-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "0s",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "llm-watchdog found the loaded model tokenizing a fixed probe wrongly (the silent-wedge signature from llamAmpere #1: requests processed as ~4-6 tokens, answers to prompts it never saw). After two failures it unloads the model via llama-swap so the next request reloads it cleanly. Check: journalctl -u llm-watchdog; docker logs llama-swap-unified.",
+      "summary": "LLM server failed its tokenizer probe"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "id": 22,
+    "uid": "llm-watchdog-stale",
+    "orgID": 1,
+    "folderUID": "alerting-w8d22g28kis",
+    "ruleGroup": "RTX_3090_GPU_Alerts",
+    "title": "LlmWatchdogStale",
+    "condition": "threshold",
+    "data": [
+      {
+        "refId": "query",
+        "queryType": "prometheus",
+        "relativeTimeRange": {
+          "from": 660,
+          "to": 60
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "(time() - llm_watchdog_last_probe_timestamp_seconds) > 300",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "query"
+        }
+      },
+      {
+        "refId": "prometheus_math",
+        "queryType": "math",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "is_number($query) || is_nan($query) || is_inf($query)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "prometheus_math",
+          "type": "math"
+        }
+      },
+      {
+        "refId": "threshold",
+        "queryType": "threshold",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "datasource": {
+            "IsPrunable": false,
+            "access": "",
+            "apiVersion": "",
+            "basicAuth": false,
+            "basicAuthUser": "",
+            "created": "0001-01-01T00:00:00Z",
+            "database": "",
+            "id": -100,
+            "isDefault": false,
+            "jsonData": {},
+            "name": "__expr__",
+            "readOnly": false,
+            "secureJsonData": {},
+            "type": "__expr__",
+            "uid": "__expr__",
+            "updated": "0001-01-01T00:00:00Z",
+            "url": "",
+            "user": "",
+            "withCredentials": false
+          },
+          "expression": "prometheus_math",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "threshold",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-26T01:33:53-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "2m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "llm-watchdog.timer stopped reporting, so a wedged model would go unnoticed. Check: systemctl status llm-watchdog.timer llm-watchdog.service",
+      "summary": "LLM watchdog has not run for 5 minutes"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": {
+      "receiver": "Funkasaur LLM Bot"
+    },
+    "record": null,
+    "missingSeriesEvalsToResolve": 1
   }
 ]
