@@ -5,9 +5,11 @@
 # and unload it after `ttl` seconds of inactivity. ${PORT} is substituted by
 # llama-swap with a free port.
 #
-# The backend here is ik-llama-server (the ik_llama.cpp fork), which adds the
-# quantisation types, MTP speculative decoding and `--split-mode graph` used
-# below. Plain llama-server will reject several of these flags.
+# Two backends. The main model runs llamAmpere (a llama.cpp fork with Ampere
+# attention kernels, built from ../../llamampere/ and mounted at /opt/llamampere).
+# Everything else runs ik-llama-server (the ik_llama.cpp fork shipped in the
+# llama-swap image), which also keeps the previous configuration of the main
+# model as a fallback entry. The two accept different flags; see docs/inference.md.
 
 # Unload an idle model after this many seconds unless overridden per model.
 globalTTL: 300
@@ -19,37 +21,86 @@ healthCheckTimeout: 180
 models:
 
   # ---------------------------------------------------------------------
-  # Dense 27B at Q8 across both cards.
+  # Dense 27B at Q8 across both cards: the main model, on llamAmpere.
   #
-  # Threading, for a 5-physical-core inference zone (cores 0-4 + SMT 16-20):
-  #   --threads 5        generation is latency-bound; one thread per physical
-  #                      core, no SMT, avoids sibling contention.
-  #   --threads-batch 10 prompt processing is throughput-bound and does
-  #                      benefit from SMT, so use all 10 logical CPUs.
+  # Threading: cpuset "0-4" (five physical cores, no SMT siblings). With every
+  # layer on the GPUs, generation keeps one core busy, so 5/5 is plenty.
   #
-  # This only works if the container is actually given both the cores and
-  # their SMT siblings — cpuset "0-4,16-20", not "0-4". See docs/cpu-topology.md.
+  # --split-mode tensor: tensor parallelism over NVLink (NCCL). --tensor-split
+  # 49.5,50.5 leaves ~2.5 GB free on GPU0 for the reranker that shares it; the
+  # split moves in ~1.9 GB steps, and 47/53 runs GPU1 out of memory.
+  #
+  # --cache-ram: host-RAM prompt cache. With local patch 0001 a ~130k session
+  # costs ~7 GB, so 32 GB holds about four before evicting one.
   # ---------------------------------------------------------------------
   Qwen-27B-Q8:
+    cmd: >
+      /opt/llamampere/llama-server
+      --model /models/<your-model>/Qwen-27B-Q8_0.gguf
+      --port ${PORT}
+      --ctx-size 262144
+      --n-predict 32768
+      --batch-size 4096
+      --ubatch-size 1024
+      --n-gpu-layers 99
+      --threads 5
+      --threads-batch 5
+      --split-mode tensor
+      --tensor-split 49.5,50.5
+      --flash-attn on
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --parallel 1
+      --jinja
+      --fit off
+      --cache-prompt
+      --cache-ram 32768
+      --ctx-checkpoints 16
+      --spec-type draft-mtp
+      --spec-draft-n-max 3
+      --spec-draft-p-min 0
+      --spec-draft-type-k q8_0
+      --spec-draft-type-v q8_0
+      --reasoning-budget 16384
+      --reasoning-budget-message "Final Answer:\nBased on my analysis above,"
+      --chat-template-kwargs '{"reasoning_effort":"medium"}'
+      --temp 1.0 --min-p 0.0 --top-p 0.95 --top-k 20 --presence-penalty 0.0 --repeat-penalty 1.0
+    env:
+      # Replaces the container's LD_LIBRARY_PATH, so the CUDA path is repeated.
+      - "LD_LIBRARY_PATH=/opt/llamampere:/usr/local/cuda/lib64"
+      - "GGML_Q8_TURBO3_MMA_FUSED=1"
+    # ttl: 0 keeps this model resident forever. Use it for the model you
+    # actually work in, so you never pay the reload cost.
+    ttl: 0
+
+  # ---------------------------------------------------------------------
+  # The same model on ik_llama: the previous configuration, kept as the
+  # rollback. Swap the two keys to switch engines.
+  # ---------------------------------------------------------------------
+  Qwen-27B-Q8-ik:
     cmd: >
       ik-llama-server
       --model /models/<your-model>/Qwen-27B-Q8_0.gguf
       --port ${PORT}
       --ctx-size 262144
+      --n-predict 32768
       --batch-size 4096
       --ubatch-size 1024
       --n-gpu-layers 99
       --threads 5
-      --threads-batch 10
+      --threads-batch 5
+      --cache-ram 16384
       --split-mode graph
-      --ctx-checkpoints 64
+      --spec-type mtp:n_max=4,p_min=0.8
+      --ctx-checkpoints 16
       --jinja
       --flash-attn on
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --temp 1.0 --min-p 0.0 --top-p 0.95 --top-k 20
-    # ttl: 0 keeps this model resident forever. Use it for the model you
-    # actually work in, so you never pay the reload cost.
+      --reasoning-budget 16384
+      --reasoning-budget-message "Final Answer:\nBased on my analysis above,"
+      --chat-template-kwargs '{"reasoning_effort":"medium"}'
+      --temp 1.0 --min-p 0.0 --top-p 0.95 --top-k 20 --presence-penalty 0.0 --repeat-penalty 1.0
     ttl: 0
 
   # ---------------------------------------------------------------------
@@ -66,7 +117,7 @@ models:
       --ubatch-size 1024
       --n-gpu-layers 99
       --threads 5
-      --threads-batch 10
+      --threads-batch 5
       --threads-mtmd 5
       --mtmd-kq-type f16
       --split-mode graph

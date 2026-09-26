@@ -34,7 +34,7 @@ CIFS/SMB repository structurally cannot do:
 cloning instead of copying. A synthetic full then costs almost no additional
 space. That is the difference between needing a spare full backup's worth of
 free space forever and needing almost none — see
-[AUDIT #10](AUDIT.md#10-the-veeam-job-had-not-run-in-three-days), where a
+[AUDIT #9](AUDIT.md#9-the-veeam-job-had-not-run-in-three-days), where a
 repository ran out of room doing exactly this. ext4 has no reflink, so Fast
 Clone is unavailable there.
 

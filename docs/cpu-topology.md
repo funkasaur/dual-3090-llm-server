@@ -74,14 +74,17 @@ done | tr ',' '\n' | sort -n | uniq | paste -sd,
 
 | Zone | Physical | `cpuset` | Runs |
 |---|---|---|---|
-| Inference | 0-4 | `0-4,16-20` | `llama-swap` / `ik-llama-server` |
+| Inference | 0-4 | `0-4` (siblings 16-20 left to the host) | `llama-swap` / llamAmpere / `ik-llama-server` |
 | Web & ingress | 5-6 | `5-6,21-22` | `open-webui` |
 | GPU conductor | 7 | `7,23` | GPU hardware interrupts (no containers) |
 
-Five physical cores for inference, sized to match `--threads 5` for generation
-and `--threads-batch 10` for prompt processing. Generation is latency-bound and
-gets one thread per physical core with no SMT contention; prompt processing is
-throughput-bound and uses all ten logical CPUs.
+Five physical cores for inference, one hardware thread each, matching
+`--threads 5` and `--threads-batch 5`. This was `"0-4,16-20"` with
+`--threads-batch 10` until 2026-09-26 ([AUDIT #2](AUDIT.md)). With every layer
+on the GPUs, generation keeps exactly one core busy on both engines (measured),
+so the SMT siblings buy nothing during inference and are better left to the
+host. Watch out for OpenMP binding inside this zone: it can confine the whole
+engine to core 0 ([AUDIT #12](AUDIT.md)).
 
 The web zone sits on the same die as the engine so a request arriving through
 Open WebUI reaches the backend without crossing the fabric.
@@ -109,7 +112,7 @@ In Compose:
 ```yaml
 services:
   llama-swap:
-    cpuset: "0-4,16-20"
+    cpuset: "0-4"          # or "0-4,16-20" to include the SMT siblings
 ```
 
 For a process outside Docker:
@@ -134,7 +137,10 @@ Claims about pinning should be checked, not assumed:
 docker inspect -f '{{.Name}} {{.HostConfig.CpusetCpus}}' $(docker ps -q)
 
 # What a running process is actually allowed
-taskset -cp $(pgrep -f ik-llama-server | head -1)
+taskset -cp $(pgrep -f llama-server | head -1)   # the process
+
+# Every thread of it: all should match the cpuset, not a single core (AUDIT #12)
+grep Cpus_allowed_list /proc/$(pgrep -f llama-server | head -1)/task/*/status | awk '{print $2}' | sort | uniq -c
 
 # Where the work is landing, live
 htop   # press F2 -> Display options -> enable "Detailed CPU time",

@@ -36,6 +36,8 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | critical | `UpsOnBattery` | > 0 |
 | critical | `UpsRuntimeLow` | > 0 |
 | warning | `HostMemoryHigh` | > 85 |
+| critical | `InferenceEngineWedged` | probe failed or watchdog unloaded the model ([llm-watchdog](../scripts/llm-watchdog.sh)) |
+| warning | `LlmWatchdogStale` | watchdog silent > 5 min |
 
 ## Dashboard: Dual-CCD Thermals
 

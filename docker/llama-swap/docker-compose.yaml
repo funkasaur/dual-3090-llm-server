@@ -1,20 +1,21 @@
-# Inference engine: llama-swap fronting ik-llama-server.
+# Inference engine: llama-swap fronting llamAmpere and ik-llama-server.
 #
 # llama-swap is the model router/lifecycle manager: it listens on one port,
-# starts the right ik-llama-server process on demand, and unloads it after
-# its TTL. ik-llama-server is what actually runs the tensors.
+# starts the right backend process on demand, and unloads it after its TTL.
+# The main model runs llamAmpere, built from ../../llamampere/ and mounted
+# read-only below; everything else runs ik-llama-server from the image.
 
 services:
   llama-swap:
     image: ghcr.io/mostlygeek/llama-swap:unified-cuda
     container_name: llama-swap-unified
 
-    # PATCH: was "0-4", which is 5 logical CPUs, NOT 5 physical cores.
-    # On a 5950X, the SMT sibling of core N is N+16, so the inference zone
-    # (physical cores 0-4) is "0-4,16-20". With the old value the engine's
-    # --threads-batch 10 was oversubscribing 5 logical CPUs 2:1 during
-    # prompt processing. See docs/cpu-topology.md.
-    cpuset: "0-4,16-20"
+    # Five physical cores, one hardware thread each; their SMT siblings
+    # (16-20 on a 5950X, where the sibling of core N is N+16) stay with the
+    # host. Matches --threads 5 / --threads-batch 5. With every layer on the
+    # GPUs, generation keeps one core busy. Use "0-4,16-20" for all ten.
+    # See docs/cpu-topology.md and AUDIT #2.
+    cpuset: "0-4"
 
     restart: unless-stopped
     logging:
@@ -34,6 +35,10 @@ services:
     volumes:
       - ${MODELS_DIR:-/models}:/models:ro
       - ./config:/app/config
+      # llama-swap's activity store (sqlite); survives container restarts.
+      - ./data:/app/data
+      # The llamAmpere build (see llamampere/build.sh).
+      - ./llamampere/bin:/opt/llamampere:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
 
@@ -50,8 +55,10 @@ services:
       - LLAMA_ATTN_ROT_DISABLE=1
       # One OpenMP thread per physical core in the inference zone.
       - OMP_NUM_THREADS=5
-      - OMP_PROC_BIND=close
-      - OMP_PLACES=cores
+      # NOT "close": with binding on, libgomp pins the main thread to the
+      # first core at load and every later thread inherits it, confining the
+      # whole server to core 0. OMP_PLACES alone implies binding. AUDIT #12.
+      - OMP_PROC_BIND=false
 
     # Lets the engine mlock weights so they are never swapped out.
     cap_add:

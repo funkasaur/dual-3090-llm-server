@@ -120,7 +120,7 @@ tail -40 /var/log/veeam-freeze.log      # timings from the last run
 
 ## What was patched
 
-See [AUDIT #11](../docs/AUDIT.md#11-the-freezethaw-scripts-could-strand-the-stack).
+See [AUDIT #10](../docs/AUDIT.md#10-the-freezethaw-scripts-could-strand-the-stack).
 
 - **Stop order was inverted** — `webui-postgres` went down before
   `open-webui`, so the UI spent the window erroring against a departed

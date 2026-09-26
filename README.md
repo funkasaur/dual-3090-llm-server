@@ -25,7 +25,7 @@ most useful file here.
 | [Hardware](#hardware) | What the box is |
 | [`docs/cpu-topology.md`](docs/cpu-topology.md) | Dual-CCD thread placement, and how to derive it yourself |
 | [`docs/irq-pinning.md`](docs/irq-pinning.md) | Interrupt isolation — including why the obvious target is the wrong one |
-| [`docs/inference.md`](docs/inference.md) | llama-swap + ik-llama-server, NVLink, measured throughput |
+| [`docs/inference.md`](docs/inference.md) | llama-swap + llamAmpere / ik_llama, NVLink, measured throughput by context |
 | [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / DCGM / SNMP |
 | [`docs/backups.md`](docs/backups.md) | Two layers: Borg file-level, Veeam image-level |
 | [`docs/veeam-linux-repository.md`](docs/veeam-linux-repository.md) | Using the Linux box as a Veeam repository, and why the SMB workaround costs you |
@@ -93,27 +93,37 @@ docker inspect -f '{{.Name}} {{.HostConfig.CpusetCpus}}' $(docker ps -q)
 ```
 
 > **The SMT trap.** On this CPU the sibling of core *N* is thread *N+16*, not
-> *N+1*. `cpuset: "0-4"` gives you five *logical* CPUs — half of what you think
-> you're getting. The correct string for five physical cores is `"0-4,16-20"`.
-> This repo shipped with that bug; see [AUDIT #2](docs/AUDIT.md).
+> *N+1*. `cpuset: "0-4"` gives you five *logical* CPUs — one thread on each of
+> five physical cores, with the siblings (16-20) left to the host. All ten are
+> `"0-4,16-20"`. This repo once mislabelled `"0-4"` as the latter; see
+> [AUDIT #2](docs/AUDIT.md). The engine now runs on `"0-4"` by choice: with the
+> model fully on the GPUs, generation keeps exactly one core busy.
 
 ---
 
 ## Inference
 
-`llama-swap` fronts `ik-llama-server`. llama-swap is the router: it exposes one
-OpenAI-compatible endpoint, launches the right backend process on demand, and
-unloads it after a TTL. `ik-llama-server` does the actual tensor work.
+`llama-swap` is the router: it exposes one OpenAI-compatible endpoint, launches
+the right backend process on demand, and unloads it after a TTL. The main model
+runs on [llamAmpere](llamampere/README.md), a llama.cpp fork with Ampere-specific
+attention kernels, built here with two local patches; every other model runs on
+`ik-llama-server`, which ships in the llama-swap image and remains a one-edit
+fallback for the main model.
 
-Both cards are driven with `--split-mode graph` over the NVLink bridge, pooling
-48GB of VRAM so a 27B dense model at Q8 fits with a very large context.
+Both cards are driven with tensor parallelism (`--split-mode tensor`) over the
+NVLink bridge, pooling 48GB of VRAM so a 27B dense model at Q8 fits with a
+262k context.
 
-Measured on this machine, 27B dense at Q8_0, 262k context:
+Measured on this machine, Qwen3.8-27B at Q8_0, real agent requests:
 
-| | |
-|---|---|
-| Generation | **~46 tok/s** |
-| Prompt processing | **~1118 tok/s** |
+| Context | Generation | vs the previous ik_llama setup |
+|---|---|---|
+| 33k | **64-68 tok/s** | 43-48 |
+| 108k | **57 tok/s** | 35 |
+| 184k | **60 tok/s** | 31 |
+| ~240k | **50 tok/s** | 24 |
+
+Prompt processing: ~1,700 tok/s at 33k, ~1,040 tok/s at 184k.
 
 See [`docs/inference.md`](docs/inference.md) for the full configuration.
 

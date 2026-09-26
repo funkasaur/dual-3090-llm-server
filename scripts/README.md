@@ -13,6 +13,7 @@ sudo systemctl daemon-reload
 | `optimize-ai.sh` | `optimize-ai.service` + `.timer` | Pin GPU interrupts off the inference cores; report immovable ones |
 | `set-gpu-power.sh` | `nvidia-power-limit.service` | Persistence mode + per-GPU power cap |
 | `backup.sh` | `borg-backup.service` + `.timer` | Nightly Borg archive with Postgres/Qdrant pre-hooks |
+| `llm-watchdog.sh` | `llm-watchdog.service` + `.timer` | Every 60 s: probe the loaded LLM's `/tokenize`; unload it after two wrong answers (silent-wedge guard, see [inference.md](../docs/inference.md#the-watchdog)) |
 
 All three are idempotent and safe to re-run.
 

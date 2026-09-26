@@ -1,0 +1,37 @@
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index ca29e92b6..4cd4ba6a6 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -1134,6 +1134,7 @@ private:
+ 
+     common_context_seq_rm_type ctx_tgt_seq_rm_type = COMMON_CONTEXT_SEQ_RM_TYPE_NO;
+     common_context_seq_rm_type ctx_dft_seq_rm_type = COMMON_CONTEXT_SEQ_RM_TYPE_NO;
++    bool ckpt_dft_snapshot = true; // false when the draft can be truncated; see the prompt-checkpoint code
+ 
+     common_speculative_ptr spec;
+ 
+@@ -1560,6 +1561,9 @@ private:
+ 
+         if (ctx_dft) {
+             ctx_dft_seq_rm_type = common_context_can_seq_rm(ctx_dft);
++            ckpt_dft_snapshot = ctx_dft_seq_rm_type != COMMON_CONTEXT_SEQ_RM_TYPE_PART || getenv("LLAMA_CKPT_DFT_FULL") != nullptr;
++            SRV_INF("draft context seq_rm type = %d, prompt checkpoints %s\n", (int) ctx_dft_seq_rm_type,
++                    ckpt_dft_snapshot ? "snapshot the draft state" : "truncate the draft on restore (no snapshot)");
+         }
+ 
+         if (spec) {
+@@ -2789,7 +2793,13 @@ private:
+         cur.update_pos(slot.prompt.n_tokens() - n_tokens_cur, pos_min, pos_max);
+ 
+         cur.update_tgt(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
+-        cur.update_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
++        // A draft context whose memory can be truncated at any position (a plain attention KV cache, such as the
++        // MTP head) needs no snapshot: on restore, slot.mem.seq_rm() truncates it to the restored position exactly
++        // as it does the target's attention cache, and load_dft() is a no-op for an empty data_dft. Snapshotting it
++        // stored the draft's whole KV in every checkpoint (~2 KB/token for Qwen3.8 MTP, ~383 MiB at 184K).
++        if (ckpt_dft_snapshot) {
++            cur.update_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
++        }
+         // stash the draft's speculative state with the checkpoint
+         common_speculative_get_state(spec.get(), slot.id, cur.data_spec);
+ 

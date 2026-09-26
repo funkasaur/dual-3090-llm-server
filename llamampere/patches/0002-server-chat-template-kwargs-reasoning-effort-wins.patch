@@ -1,0 +1,15 @@
+diff --git a/tools/server/server-common.cpp b/tools/server/server-common.cpp
+index 7bf1138c8..b4964a498 100644
+--- a/tools/server/server-common.cpp
++++ b/tools/server/server-common.cpp
+@@ -1344,7 +1344,9 @@ json oaicompat_chat_params_parse(
+     }
+ 
+     // Parse the OAI "reasoning_effort" field; "none" disables reasoning.
+-    if (body.contains("reasoning_effort")) {
++    // An explicit chat_template_kwargs.reasoning_effort in the same request wins: some clients (Hermes) send
++    // both, and the kwargs value is the one they mean. The top-level field alone still applies.
++    if (body.contains("reasoning_effort") && !chat_template_kwargs_object.contains("reasoning_effort")) {
+         auto reasoning_effort = json_value(body, "reasoning_effort", std::string(""));
+         if (reasoning_effort == "none") {
+             inputs.enable_thinking = false;

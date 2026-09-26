@@ -123,6 +123,19 @@ Rules evaluate and display in the UI without an Alertmanager, but nothing is
 delivered anywhere until you run one. There is a commented `alerting:` block in
 `prometheus.yml`.
 
+### LLM watchdog
+
+HTTP health checks cannot see a server that answers 200 with the wrong content.
+[`llm-watchdog`](../scripts/llm-watchdog.sh) probes the loaded main model's
+`/tokenize` every 60 s and writes `llm_watchdog_tokenize_ok`,
+`llm_watchdog_model_loaded`, `llm_watchdog_unloads_total` and
+`llm_watchdog_last_probe_timestamp_seconds` through the node-exporter textfile
+collector (atomically, like `gpu-vram-temps`). `InferenceEngineWedged` fires on
+a failed probe or any watchdog unload; `LlmWatchdogStale` fires if the watchdog
+itself stops reporting, so a dead watchdog cannot look like a healthy server.
+The whole chain — probe, unload, metric, rule, Telegram — was tested by forcing
+a failure (`EXPECTED_TOKENS=7 FAILS_TO_ACT=1`).
+
 ## Dashboard starting points
 
 - Import **Grafana dashboard 12239** (NVIDIA DCGM) as a base and add the

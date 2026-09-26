@@ -16,7 +16,7 @@ Veeam is a clumsy way to retrieve one `.env` from last week.
 > **Check that both are actually running.** These are the two most
 > independently-failing things in the stack, and a stalled backup job looks
 > exactly like a working one from the inside. See
-> [AUDIT #10](AUDIT.md#10-the-veeam-job-had-not-run-in-three-days).
+> [AUDIT #9](AUDIT.md#9-the-veeam-job-had-not-run-in-three-days).
 
 ---
 
@@ -47,7 +47,7 @@ it would reintroduce exactly the inconsistency the snapshots exist to prevent.
 > which is *not* covered by a `/qdrant/storage` mount — by default it lands in
 > the container's writable layer, where no host backup can see it and a
 > `docker compose down` destroys it. This stack had 370 snapshots and 5.6 GB
-> stranded that way ([AUDIT #12](AUDIT.md#12-borgs-retention-works-its-pre-hooks-never-clean-up-after-themselves)).
+> stranded that way ([AUDIT #11](AUDIT.md#11-borgs-retention-works-its-pre-hooks-never-clean-up-after-themselves)).
 > The Compose file now mounts `./qdrant_snapshots:/qdrant/snapshots`, and
 > `backup.sh` warns if that directory is missing or empty.
 
@@ -97,7 +97,7 @@ passphrase is indistinguishable from random data.
 
 ### Failure modes this script guards against
 
-Every one of these was a real gap ([AUDIT #6](AUDIT.md#6-the-backup-script-had-several-quiet-failure-modes)):
+Every one of these was a real gap ([AUDIT #5](AUDIT.md#5-the-backup-script-had-several-quiet-failure-modes)):
 
 | Guard | Without it |
 |---|---|
@@ -199,7 +199,7 @@ Backup chain shape: weekly full (`.vbk`) with daily incrementals (`.vib`).
 > one drive (Borg 92 GB, Veeam 1.3 TB), so they share a single failure domain
 > despite being chosen to fail independently. It is a good local restore tier,
 > not an off-site copy. See
-> [AUDIT #10a](AUDIT.md#10a-both-backup-systems-share-one-failure-domain).
+> [AUDIT #9a](AUDIT.md#9a-both-backup-systems-share-one-failure-domain).
 
 ### Freezing the stack around the snapshot
 
@@ -261,7 +261,7 @@ A backup you have never restored is a hypothesis.
 ### Watch the repository's free space
 
 This is what actually broke the Veeam layer here
-([AUDIT #10](AUDIT.md#10-the-veeam-job-had-not-run-in-three-days)). A synthetic
+([AUDIT #9](AUDIT.md#9-the-veeam-job-had-not-run-in-three-days)). A synthetic
 full is built by merging the existing chain into a **new** full file, which must
 exist alongside the old one before anything can be pruned. So the volume needs
 roughly one full backup's worth of free space, permanently, on top of the chain
