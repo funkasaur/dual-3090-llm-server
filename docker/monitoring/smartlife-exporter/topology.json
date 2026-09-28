@@ -1,0 +1,15 @@
+{
+  "_comment": "Which plug feeds which. Top-level meters (no parent) are what the bill sees; children are already counted inside their parent. Children inherit the parent's circuit. Edit after the move and restart the exporter.",
+  "circuit_amps": 15,
+  "devices": {
+    "Server":            {"circuit": "Circuit A", "planned_circuit": "New 15 A"},
+    "Desktop":           {"circuit": "Circuit A", "planned_circuit": "New 15 A"},
+    "Office":            {"circuit": "Circuit B", "planned_circuit": "New 15 A"},
+    "TV and Audio":      {"circuit": "Circuit B"},
+    "Internet and Den":  {"circuit": "Circuit B"},
+    "Desk":              {"parent": "Desktop"},
+    "LLM Server":        {"parent": "Office"},
+    "Brocade Switch":    {"parent": "Server"},
+    "Optiplex 7070 SFF": {"parent": "Server"}
+  }
+}

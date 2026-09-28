@@ -16,7 +16,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.time=2y'
     networks:
       - ai-net
 
@@ -119,6 +119,23 @@ services:
     networks:
       - ai-net
 
+
+  # 7. Smart Life (Tuya) plug power per device. One-time login:
+  #    docker compose run --rm smartlife-exporter python login.py <USER_CODE>
+  smartlife-exporter:
+    build: ./smartlife-exporter
+    container_name: smartlife-exporter
+    cpuset: "8-15,24-31" # Strictly on CCD1
+    restart: unless-stopped
+    ports:
+      - "9106:9106"
+    volumes:
+      - ./smartlife-exporter/data:/data
+      - ./smartlife-exporter/topology.json:/app/topology.json:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - ai-net
 
 volumes:
   prom_data:
