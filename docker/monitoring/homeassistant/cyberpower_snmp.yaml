@@ -1,0 +1,152 @@
+# CyberPower RMCARD UPS sensors via SNMP (OIDs from CPS-MIB, same as Prometheus snmp-exporter 'cyberpower' module).
+# Paste under `sensor:` in /config/configuration.yaml (or include as a package) and add `snmp_community: <community>` to secrets.yaml.
+# The community string is in ~/monitoring/auth.yml on the monitoring host. Restart HA after adding (new platform).
+sensor:
+  - platform: snmp
+    name: LLM Server UPS Status
+    unique_id: llm_server_ups_status
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.4.1.1.0
+    scan_interval: 30
+    value_template: "{{ {1:'unknown',2:'online',3:'on battery',4:'boost',5:'sleep',6:'off',7:'rebooting',8:'eco',9:'bypass',10:'buck',11:'overload'}.get(value|int, value) }}"
+  - platform: snmp
+    name: LLM Server UPS Battery
+    unique_id: llm_server_ups_battery
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.2.2.1.0
+    scan_interval: 30
+    unit_of_measurement: '%'
+    device_class: battery
+    state_class: measurement
+  - platform: snmp
+    name: LLM Server UPS Runtime
+    unique_id: llm_server_ups_runtime
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.2.2.4.0
+    scan_interval: 30
+    unit_of_measurement: 'min'
+    device_class: duration
+    state_class: measurement
+    value_template: "{{ (value|int / 6000) | round(0) }}"
+  - platform: snmp
+    name: LLM Server UPS Load
+    unique_id: llm_server_ups_load
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.4.2.3.0
+    scan_interval: 30
+    unit_of_measurement: '%'
+    state_class: measurement
+  - platform: snmp
+    name: LLM Server UPS Output power
+    unique_id: llm_server_ups_output_power
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.4.2.5.0
+    scan_interval: 30
+    unit_of_measurement: 'W'
+    device_class: power
+    state_class: measurement
+  - platform: snmp
+    name: LLM Server UPS Input voltage
+    unique_id: llm_server_ups_input_voltage
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.3.2.1.0
+    scan_interval: 30
+    unit_of_measurement: 'V'
+    device_class: voltage
+    state_class: measurement
+    value_template: "{{ (value|int / 10) | round(1) }}"
+  - platform: snmp
+    name: LLM Server UPS Battery replace
+    unique_id: llm_server_ups_battery_replace
+    host: 10.0.0.114
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.2.2.5.0
+    scan_interval: 30
+    value_template: "{{ 'replace' if value|int == 2 else 'ok' }}"
+  - platform: snmp
+    name: Desktop UPS Status
+    unique_id: desktop_ups_status
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.4.1.1.0
+    scan_interval: 30
+    value_template: "{{ {1:'unknown',2:'online',3:'on battery',4:'boost',5:'sleep',6:'off',7:'rebooting',8:'eco',9:'bypass',10:'buck',11:'overload'}.get(value|int, value) }}"
+  - platform: snmp
+    name: Desktop UPS Battery
+    unique_id: desktop_ups_battery
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.2.2.1.0
+    scan_interval: 30
+    unit_of_measurement: '%'
+    device_class: battery
+    state_class: measurement
+  - platform: snmp
+    name: Desktop UPS Runtime
+    unique_id: desktop_ups_runtime
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.2.2.4.0
+    scan_interval: 30
+    unit_of_measurement: 'min'
+    device_class: duration
+    state_class: measurement
+    value_template: "{{ (value|int / 6000) | round(0) }}"
+  - platform: snmp
+    name: Desktop UPS Load
+    unique_id: desktop_ups_load
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.4.2.3.0
+    scan_interval: 30
+    unit_of_measurement: '%'
+    state_class: measurement
+  - platform: snmp
+    name: Desktop UPS Output power
+    unique_id: desktop_ups_output_power
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.4.2.5.0
+    scan_interval: 30
+    unit_of_measurement: 'W'
+    device_class: power
+    state_class: measurement
+  - platform: snmp
+    name: Desktop UPS Input voltage
+    unique_id: desktop_ups_input_voltage
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.3.2.1.0
+    scan_interval: 30
+    unit_of_measurement: 'V'
+    device_class: voltage
+    state_class: measurement
+    value_template: "{{ (value|int / 10) | round(1) }}"
+  - platform: snmp
+    name: Desktop UPS Battery replace
+    unique_id: desktop_ups_battery_replace
+    host: 10.0.0.62
+    community: !secret snmp_community
+    version: '1'
+    baseoid: 1.3.6.1.4.1.3808.1.1.1.2.2.5.0
+    scan_interval: 30
+    value_template: "{{ 'replace' if value|int == 2 else 'ok' }}"

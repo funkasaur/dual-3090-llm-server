@@ -1,0 +1,28 @@
+{{ define "tg.esc" }}{{ . | reReplaceAll "&" "&amp;" | reReplaceAll "<" "&lt;" | reReplaceAll ">" "&gt;" }}{{ end }}
+
+{{ define "tg.alert" -}}
+{{ if eq .Status "resolved" }}✅ <b>RESOLVED · {{ .Labels.alertname }}</b>
+<i>{{ .StartsAt.Local.Format "Mon 15:04" }} – {{ .EndsAt.Local.Format "15:04" }}</i>
+{{- else -}}
+{{ if eq .Labels.severity "critical" }}🔴 <b>CRITICAL</b>{{ else }}🟠 <b>WARNING</b>{{ end }} · <b>{{ .Labels.alertname }}</b>
+{{- with .Annotations.summary }}{{ if and (ne . $.Labels.alertname) (ne . "") }}
+<b>{{ template "tg.esc" . }}</b>{{ end }}{{ end }}
+{{- with .Annotations.description }}
+{{ template "tg.esc" . }}{{ end }}
+{{- $ctx := "" }}{{ range .Labels.SortedPairs }}{{ if not (or (eq .Name "alertname") (eq .Name "severity") (eq .Name "grafana_folder") (match "^__" .Name)) }}{{ $ctx = printf "%s%s=%s  " $ctx .Name .Value }}{{ end }}{{ end }}
+{{- if $ctx }}
+<code>{{ template "tg.esc" $ctx }}</code>{{ end }}
+{{- $v := "" }}{{ with index .Values "A" }}{{ $v = printf "%.4g" . }}{{ end }}{{ with index .Values "query" }}{{ $v = printf "%.4g" . }}{{ end }}
+<i>since {{ .StartsAt.Local.Format "Mon 15:04" }}{{ if $v }} · value {{ $v }}{{ end }}</i>
+{{- with .Annotations.dashboard }}
+<a href="{{ . }}">Open dashboard</a>{{ end }}
+{{- end }}
+{{- end }}
+
+{{ define "tg.message" -}}
+{{ range .Alerts.Firing }}{{ template "tg.alert" . }}
+
+{{ end }}{{ range .Alerts.Resolved }}{{ template "tg.alert" . }}
+
+{{ end }}
+{{- end }}
