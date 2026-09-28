@@ -40,4 +40,8 @@ scrape_configs:
       - targets: ['10.0.0.26:3060']
   - job_name: 'llama-swap-activity'
     static_configs:
-      - targets: ['10.0.0.26:9105']      
+      - targets: ['10.0.0.26:9105']
+  - job_name: 'smartlife'
+    scrape_interval: 60s
+    static_configs:
+      - targets: ['smartlife-exporter:9106']

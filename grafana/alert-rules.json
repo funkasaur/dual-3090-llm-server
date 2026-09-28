@@ -2565,5 +2565,215 @@
     },
     "record": null,
     "missingSeriesEvalsToResolve": 1
+  },
+  {
+    "id": 23,
+    "uid": "home-newcircuit-high",
+    "orgID": 1,
+    "folderUID": "home-power",
+    "ruleGroup": "Circuit load",
+    "title": "NewCircuitLoadHigh",
+    "condition": "B",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "sum(avg_over_time(smartlife_current_amps[5m]) * on(device_id) group_left() smartlife_device_topology{level=\"top\",planned_circuit=\"New 15 A\"})",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "B",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  12.5
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "B",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-26T23:42:12-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "10m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "description": "Server + Desktop + Office have averaged {{ humanize $values.A.Value }} A for 10+ minutes, above the 12 A continuous-load limit of a 15 A circuit. Shed load (GPU power limit, move a device) before it becomes routine.",
+      "summary": "NewCircuitLoadHigh"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
+  },
+  {
+    "id": 24,
+    "uid": "home-newcircuit-overload",
+    "orgID": 1,
+    "folderUID": "home-power",
+    "ruleGroup": "Circuit load",
+    "title": "NewCircuitOverload",
+    "condition": "B",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "sum(avg_over_time(smartlife_current_amps[1m]) * on(device_id) group_left() smartlife_device_topology{level=\"top\",planned_circuit=\"New 15 A\"})",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "B",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  14.5
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "B",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-26T23:42:12-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "2m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "description": "Server + Desktop + Office are drawing {{ humanize $values.A.Value }} A, close to the 15 A breaker rating. A sustained draw at this level can trip the breaker.",
+      "summary": "NewCircuitOverload"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
+  },
+  {
+    "id": 25,
+    "uid": "home-smartlife-exporter-down",
+    "orgID": 1,
+    "folderUID": "home-power",
+    "ruleGroup": "Circuit load",
+    "title": "SmartLifeExporterDown",
+    "condition": "B",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "(1 - max(smartlife_up)) or on() (absent(smartlife_up) * 1)",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "B",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "B",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-26T23:42:12-04:00",
+    "noDataState": "Alerting",
+    "execErrState": "OK",
+    "for": "15m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "description": "The Smart Life exporter has not completed a poll for 15 minutes, so circuit alerts are blind. Check `docker logs smartlife-exporter` (a login token expiry needs login.py again).",
+      "summary": "SmartLifeExporterDown"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
   }
 ]
