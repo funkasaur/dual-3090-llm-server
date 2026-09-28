@@ -61,7 +61,7 @@ models:
       --spec-draft-p-min 0
       --spec-draft-type-k q8_0
       --spec-draft-type-v q8_0
-      --reasoning-budget 16384
+      --reasoning-budget 24576  # was 16384; raised 2026-09-26 after a long agent run hit it on 6 of ~100 steps
       --reasoning-budget-message "Final Answer:\nBased on my analysis above,"
       --chat-template-kwargs '{"reasoning_effort":"medium"}'
       --temp 1.0 --min-p 0.0 --top-p 0.95 --top-k 20 --presence-penalty 0.0 --repeat-penalty 1.0
