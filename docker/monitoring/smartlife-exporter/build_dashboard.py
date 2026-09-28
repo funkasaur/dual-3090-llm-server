@@ -24,6 +24,9 @@ def src(sel=""):
     return (f"(((smartlife_power_watts{sel} and on(device_id) smartlife_voltage_volts < 300)"
             f" or smartlife_power_watts_history{sel} or smartlife_power_watts_estimate{sel}) + 0)")
 W = src()
+TOPS = "|".join(n.replace("+", "\\\\+") for n, d in TOPO.items() if not d.get("parent"))
+W_TOP = src('{name=~"%s"}' % TOPS)   # billed meters, history-safe
+GOOD, WARN_S, CRIT_S = "#0ca30c", "#fab219", "#d03b3b"   # reserved status colours
 def kwh(step_s=60):   # energy over the panel range; gaps count as zero
     return f"sum_over_time({W}[$__range:{step_s}s]) * {step_s} / 3.6e6"
 KWH = kwh()
@@ -77,8 +80,32 @@ panels.append(panel("bargauge", "New 15 A circuit (after move)", 19, 0, 5, 5,
     fieldConfig=dict(defaults=dict(unit="amp", decimals=1, min=0, max=16, color={"mode": "thresholds"},
                                    thresholds=thresholds((None, CIRCUIT), (12, WARN), (15, CRIT))), overrides=[])))
 
+# ---- Status strip and always-on baseline ------------------------------------------
+panels.append(panel("stat", "Plug status", 0, 5, 14, 4,
+    [dict(expr="max by (name) (smartlife_device_online) * (1 + max by (name) (smartlife_switch_on))",
+          legendFormat="{{name}}", instant=True)],
+    description="ON = online and relay closed; OFF = online, relay open (no power to that outlet); OFFLINE = plug not reachable.",
+    options=dict(colorMode="value", graphMode="none", textMode="value_and_name", justifyMode="center", orientation="vertical",
+                 text=dict(titleSize=12, valueSize=16), reduceOptions=dict(calcs=["lastNotNull"], fields="", values=False)),
+    fieldConfig=dict(defaults=dict(mappings=[{"type": "value", "options": {
+            "0": {"text": "OFFLINE", "color": CRIT_S, "index": 0}, "1": {"text": "OFF", "color": WARN_S, "index": 1},
+            "2": {"text": "ON", "color": GOOD, "index": 2}}}],
+        color={"mode": "fixed", "fixedColor": "text"}), overrides=[]),
+    transformations=[{"id": "sortBy", "options": {"sort": [{"field": "Field", "desc": False}]}}]))
+BASE = f"quantile_over_time(0.05, sum({W_TOP})[7d:5m])"
+panels.append(panel("stat", "Always-on load", 14, 5, 5, 4, [dict(expr=BASE, instant=True, legendFormat="baseline")],
+    description="What never turns off: 5th percentile of whole-home power over the last 7 days.",
+    options=dict(colorMode="none", graphMode="none", textMode="value", justifyMode="center", text=dict(valueSize=30),
+                 reduceOptions=dict(calcs=["lastNotNull"], fields="", values=False)),
+    fieldConfig=dict(defaults=dict(unit="watt", decimals=0, color=fixed("text")), overrides=[])))
+panels.append(panel("stat", "Always-on cost / month", 19, 5, 5, 4, [dict(expr=f"{BASE} * 730 / 1000 * $rate", instant=True, legendFormat="baseline")],
+    description="The always-on load running for a whole month, at the rate set above.",
+    options=dict(colorMode="none", graphMode="none", textMode="value", justifyMode="center", text=dict(valueSize=30),
+                 reduceOptions=dict(calcs=["lastNotNull"], fields="", values=False)),
+    fieldConfig=dict(defaults=dict(unit="currencyUSD", decimals=0, color=fixed("text")), overrides=[])))
+
 # ---- Power by meter ------------------------------------------------------------
-panels.append(panel("timeseries", "Power by meter (stacked = whole home)", 0, 5, 24, 10,
+panels.append(panel("timeseries", "Power by meter (stacked = whole home)", 0, 9, 24, 10,
     [dict(expr=src('{name="%s"}' % n), legendFormat=n) for n, _ in METERS],
     description="Live plug readings from Sep 26 21:07; before that, Home Assistant history (hourly, 5-min for the "
                 "last 10 days). NerdQaxe++ and LLM Server have no HA history (LLM Server uses its UPS for 30 days).",
@@ -96,7 +123,7 @@ def circuit_panel(title, x, key, value, desc):
     names = members(key, value)
     real = (f'sum(smartlife_current_amps{{name=~"{names}"}} and on(device_id) smartlife_voltage_volts < 300)')
     hist = "sum(%s) / 120" % src('{name=~"%s"}' % names)
-    return panel("timeseries", title, x, 15, 8, 8, [dict(expr=f"{real} or on() {hist}", legendFormat="load")],
+    return panel("timeseries", title, x, 19, 8, 8, [dict(expr=f"{real} or on() {hist}", legendFormat="load")],
         description=desc + " Measured current from Sep 26 21:07; before that, power history / 120 V "
                            "(hourly averages hide short peaks). Dashed: 12 A continuous limit, 15 A breaker.",
         options=dict(legend=dict(displayMode="list", placement="bottom", showLegend=False),
@@ -111,8 +138,43 @@ panels.append(circuit_panel("Circuit B · Office, TV, Internet", 8, "circuit", "
 panels.append(circuit_panel("After move · New 15 A (Server + Desktop + Office)", 16, "planned_circuit", "New 15 A",
                             "The three meters planned for one 15 A circuit."))
 
+# ---- Mains voltage and year-over-year -------------------------------------------------
+panels.append(panel("timeseries", "Mains voltage by circuit", 0, 27, 12, 8,
+    [dict(expr='avg by (circuit) ((smartlife_voltage_volts < 300) * on(device_id) group_left(circuit) '
+               'smartlife_device_topology{level="top",circuit!=""})', legendFormat="{{circuit}}")],
+    description="Average of the plugs on each circuit. Dashed: ANSI C84.1 range B limits (110 / 127 V), "
+                "which the MainsVoltageLow/High alerts use. Normal here is 113-122 V. Live readings only (Sep 26 on).",
+    options=dict(legend=dict(displayMode="list", placement="bottom"), tooltip=dict(mode="multi", sort="none")),
+    fieldConfig=dict(defaults=dict(unit="volt", decimals=1, min=105, max=130,
+        thresholds=thresholds((None, "transparent"), (110, WARN), (127, WARN)),
+        custom=dict(drawStyle="line", lineWidth=2, fillOpacity=0, showPoints="never",
+                    thresholdsStyle=dict(mode="dashed"), axisBorderShow=False)),
+        overrides=[{"matcher": {"id": "byName", "options": "Circuit A"}, "properties": [{"id": "color", "value": fixed(CIRCUIT)}]},
+                   {"matcher": {"id": "byName", "options": "Circuit B"}, "properties": [{"id": "color", "value": fixed(ESTIMATE)}]}])))
+def yoy(off=""):
+    return f"sum by (name) (sum_over_time({W}[$__range:300s]{off}) * 300 / 3.6e6 * {TOP}) * $rate"
+panels.append(panel("table", "This month vs the same days last year", 12, 27, 12, 8,
+    [dict(expr=yoy(), format="table", instant=True),
+     dict(expr=yoy(" offset 1y"), format="table", instant=True)],
+    description="Cost so far this calendar month against the same span of days a year earlier. Blank = no history "
+                "a year back (Office starts Oct 2025, Desktop Jan 2026, Internet and Den Dec 2025).",
+    timeFrom="now/M", hideTimeOverride=True,
+    transformations=[{"id": "merge", "options": {}},
+        {"id": "organize", "options": {"excludeByName": {"Time": True},
+                                       "renameByName": {"name": "Meter", "Value #A": "This month", "Value #B": "Last year"}}},
+        {"id": "calculateField", "options": {"mode": "binary", "alias": "Change",
+                                             "binary": {"left": "This month", "operator": "-", "right": "Last year"}}},
+        {"id": "sortBy", "options": {"sort": [{"field": "This month", "desc": True}]}}],
+    fieldConfig=dict(defaults=dict(unit="currencyUSD", decimals=2, custom=dict(align="auto")), overrides=[
+        {"matcher": {"id": "byName", "options": "Change"}, "properties": [
+            {"id": "custom.cellOptions", "value": {"type": "color-text"}},
+            {"id": "color", "value": {"mode": "thresholds"}},
+            {"id": "thresholds", "value": thresholds((None, GOOD), (0.005, WARN_S))},
+            {"id": "mappings", "value": [{"type": "special", "options": {"match": "nan", "result": {"text": "—", "color": "text"}}},
+                                         {"type": "special", "options": {"match": "null", "result": {"text": "—", "color": "text"}}}]}]}])))
+
 # ---- Energy ------------------------------------------------------------------------
-panels.append(panel("timeseries", "Energy by meter", 0, 23, 12, 9,
+panels.append(panel("timeseries", "Energy by meter", 0, 35, 12, 9,
     [dict(expr="sum_over_time(%s[$__interval:1m]) * 60 / 3.6e6" % src('{name="%s"}' % n), legendFormat=n)
      for n, _ in METERS],
     interval="1h", maxDataPoints=48,
@@ -123,7 +185,7 @@ panels.append(panel("timeseries", "Energy by meter", 0, 23, 12, 9,
                     stacking=dict(mode="normal", group="A"), axisBorderShow=False)),
         overrides=color_overrides())))
 def cost_panel(title, x, time_from, step_s, desc):
-    return panel("bargauge", title, x, 23, 6, 9,
+    return panel("bargauge", title, x, 35, 6, 9,
         [dict(expr=f"sort_desc(sum by (name) ({kwh(step_s)} * {TOP})) * $rate", legendFormat="{{name}}", instant=True)],
         description=desc, timeFrom=time_from, hideTimeOverride=True,
         options=dict(orientation="horizontal", displayMode="basic", showUnfilled=False, valueMode="text",
@@ -146,7 +208,7 @@ for par in PARENTS:
     inside.append(dict(expr=f"sort_desc({AVG} * {sub})", legendFormat=par + " › {{name}}", instant=True))
     inside.append(dict(expr=f'sum({AVG} * on(device_id) group_left() smartlife_device_topology{{name="{par}"}})'
                             f" - sum({AVG} * {sub})", legendFormat=f"{par} › {REST[par]}", instant=True))
-panels.append(panel("bargauge", "Inside each meter (average power, selected range)", 0, 32, 24, 12, inside,
+panels.append(panel("bargauge", "Inside each meter (average power, selected range)", 0, 44, 24, 12, inside,
     description="Sub-meters, and the unmetered remainder of each parent meter (parent minus its sub-meters). Already counted in the billed totals above.",
     options=dict(orientation="horizontal", displayMode="basic", showUnfilled=False, valueMode="text",
                  text=dict(valueSize=16, titleSize=13), namePlacement="top",
@@ -161,7 +223,7 @@ panels.append(panel("bargauge", "Inside each meter (average power, selected rang
                     for plug, label in CHILD.items() for par in PARENTS if TOPO.get(plug, {}).get("parent") == par])))
 
 # ---- Device table (collapsed) --------------------------------------------------------
-tbl = panel("table", "All plugs", 0, 45, 24, 10, [
+tbl = panel("table", "All plugs", 0, 57, 24, 10, [
     dict(expr=f"{W} * on(device_id) group_left(parent, level, circuit) smartlife_device_topology", format="table", instant=True),
     dict(expr="smartlife_voltage_volts", format="table", instant=True),
     dict(expr="smartlife_current_amps", format="table", instant=True),
@@ -181,7 +243,7 @@ tbl = panel("table", "All plugs", 0, 45, 24, 10, [
             {"type": "value", "options": {"1": {"text": "yes"}, "0": {"text": "OFFLINE", "color": CRIT}}}]},
             {"id": "custom.cellOptions", "value": {"type": "color-text"}}]}]))
 panels.append({"id": 99, "type": "row", "title": "Plug details", "collapsed": True,
-               "gridPos": dict(x=0, y=44, w=24, h=1), "panels": [tbl]})
+               "gridPos": dict(x=0, y=56, w=24, h=1), "panels": [tbl]})
 
 dash = dict(uid="smartlife-power", title="Home power", tags=["smartlife", "power"], timezone="browser",
             refresh="1m", time={"from": "now-24h", "to": "now"}, schemaVersion=39, graphTooltip=1,

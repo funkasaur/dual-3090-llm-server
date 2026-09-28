@@ -41,6 +41,15 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `NewCircuitLoadHigh` | Server + Desktop + Office 5-min average > 12.5 A for 10 min |
 | critical | `NewCircuitOverload` | same three > 14.5 A for 2 min |
 | warning | `SmartLifeExporterDown` | no successful plug poll for 15 min |
+| warning | `MainsVoltageLow` | a circuit's plugs average < 110 V for 5 min (ANSI C84.1 range B) |
+| warning | `MainsVoltageHigh` | a circuit's plugs average > 127 V for 5 min |
+| warning | `DailyEnergyHigh` | last 24 h > 140% of the previous week's daily average (repeats once a day) |
+
+Telegram messages use `telegram-readable.tmpl` (contact point message
+`{{ template "tg.message" . }}`, parse mode HTML): severity, name, description,
+value, useful labels and a dashboard link instead of Grafana's label dump.
+`notification-policy.json` holds the routing, including the 24 h repeat for
+`DailyEnergyHigh`.
 
 ## Dashboard: Dual-CCD Thermals
 

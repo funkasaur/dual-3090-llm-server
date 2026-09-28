@@ -2775,5 +2775,232 @@
     "isPaused": false,
     "notification_settings": null,
     "record": null
+  },
+  {
+    "id": 29,
+    "uid": "home-daily-energy-high",
+    "orgID": 1,
+    "folderUID": "home-power",
+    "ruleGroup": "Energy",
+    "title": "DailyEnergyHigh",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "sum(avg_over_time((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0)[24h:5m])) / sum(avg_over_time((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0)[7d:5m] offset 1d))",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "B",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "sum(avg_over_time((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0)[24h:5m])) * 24 / 1000",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "B"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  1.4
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-27T00:00:23-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "1h",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "description": "The last 24 hours used {{ printf \"%.1f\" $values.B.Value }} kWh, {{ humanizePercentage $values.A.Value }} of the previous week's daily average. Something may have been left running - check Power by meter on the dashboard.",
+      "summary": "Energy use well above normal"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
+  },
+  {
+    "id": 28,
+    "uid": "home-mains-voltage-high",
+    "orgID": 1,
+    "folderUID": "home-power",
+    "ruleGroup": "Circuit load",
+    "title": "MainsVoltageHigh",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "max by (circuit) ((avg_over_time(smartlife_voltage_volts[5m]) < 300) * on(device_id) group_left(circuit) smartlife_device_topology{level=\"top\",circuit!=\"\"})",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  127
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-27T00:00:23-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "description": "Mains voltage on {{ $labels.circuit }} has averaged {{ printf \"%.1f\" $values.A.Value }} V for 5+ minutes, above the 127 V ANSI C84.1 limit (normal here: 113-122 V). Worth reporting to the utility if it persists.",
+      "summary": "Mains voltage high"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
+  },
+  {
+    "id": 27,
+    "uid": "home-mains-voltage-low",
+    "orgID": 1,
+    "folderUID": "home-power",
+    "ruleGroup": "Circuit load",
+    "title": "MainsVoltageLow",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 900,
+          "to": 0
+        },
+        "datasourceUid": "efnh5gcimbv28f",
+        "model": {
+          "expr": "min by (circuit) ((avg_over_time(smartlife_voltage_volts[5m]) < 300) * on(device_id) group_left(circuit) smartlife_device_topology{level=\"top\",circuit!=\"\"})",
+          "instant": true,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "range": false,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  110
+                ],
+                "type": "lt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-27T00:00:23-04:00",
+    "noDataState": "OK",
+    "execErrState": "OK",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "description": "Mains voltage on {{ $labels.circuit }} has averaged {{ printf \"%.1f\" $values.A.Value }} V for 5+ minutes, below the 110 V ANSI C84.1 limit (normal here: 113-122 V). Brown-out or an overloaded circuit; the UPS units may start switching to battery.",
+      "summary": "Mains voltage low"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
   }
 ]
