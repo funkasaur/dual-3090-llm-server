@@ -10,10 +10,10 @@
     "url": "/d/smartlife-power/home-power",
     "expires": "0001-01-01T00:00:00Z",
     "created": "2026-09-26T21:02:48-04:00",
-    "updated": "2026-09-26T23:46:38-04:00",
+    "updated": "2026-09-27T00:02:55-04:00",
     "updatedBy": "Claude",
     "createdBy": "Claude",
-    "version": 13,
+    "version": 15,
     "hasAcl": false,
     "isFolder": false,
     "apiVersion": "v0alpha1",
@@ -448,6 +448,206 @@
           "type": "prometheus",
           "uid": "efnh5gcimbv28f"
         },
+        "description": "ON = online and relay closed; OFF = online, relay open (no power to that outlet); OFFLINE = plug not reachable.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "text",
+              "mode": "fixed"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#d03b3b",
+                    "index": 0,
+                    "text": "OFFLINE"
+                  },
+                  "1": {
+                    "color": "#fab219",
+                    "index": 1,
+                    "text": "OFF"
+                  },
+                  "2": {
+                    "color": "#0ca30c",
+                    "index": 2,
+                    "text": "ON"
+                  }
+                },
+                "type": "value"
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 14,
+          "x": 0,
+          "y": 5
+        },
+        "id": 8,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "vertical",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "titleSize": 12,
+            "valueSize": 16
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "max by (name) (smartlife_device_online) * (1 + max by (name) (smartlife_switch_on))",
+            "instant": true,
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Plug status",
+        "transformations": [
+          {
+            "id": "sortBy",
+            "options": {
+              "sort": [
+                {
+                  "desc": false,
+                  "field": "Field"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "What never turns off: 5th percentile of whole-home power over the last 7 days.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "text",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "unit": "watt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 5,
+          "x": 14,
+          "y": 5
+        },
+        "id": 9,
+        "options": {
+          "colorMode": "none",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 30
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "quantile_over_time(0.05, sum((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0))[7d:5m])",
+            "instant": true,
+            "legendFormat": "baseline",
+            "refId": "A"
+          }
+        ],
+        "title": "Always-on load",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "The always-on load running for a whole month, at the rate set above.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "text",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "unit": "currencyUSD"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 5,
+          "x": 19,
+          "y": 5
+        },
+        "id": 10,
+        "options": {
+          "colorMode": "none",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 30
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "quantile_over_time(0.05, sum((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0))[7d:5m]) * 730 / 1000 * $rate",
+            "instant": true,
+            "legendFormat": "baseline",
+            "refId": "A"
+          }
+        ],
+        "title": "Always-on cost / month",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
         "description": "Live plug readings from Sep 26 21:07; before that, Home Assistant history (hourly, 5-min for the last 10 days). NerdQaxe++ and LLM Server have no HA history (LLM Server uses its UPS for 30 days).",
         "fieldConfig": {
           "defaults": {
@@ -565,9 +765,9 @@
           "h": 10,
           "w": 24,
           "x": 0,
-          "y": 5
+          "y": 9
         },
-        "id": 8,
+        "id": 11,
         "options": {
           "legend": {
             "calcs": [
@@ -694,9 +894,9 @@
           "h": 8,
           "w": 8,
           "x": 0,
-          "y": 15
+          "y": 19
         },
-        "id": 9,
+        "id": 12,
         "options": {
           "legend": {
             "displayMode": "list",
@@ -772,9 +972,9 @@
           "h": 8,
           "w": 8,
           "x": 8,
-          "y": 15
+          "y": 19
         },
-        "id": 10,
+        "id": 13,
         "options": {
           "legend": {
             "displayMode": "list",
@@ -850,9 +1050,9 @@
           "h": 8,
           "w": 8,
           "x": 16,
-          "y": 15
+          "y": 19
         },
-        "id": 11,
+        "id": 14,
         "options": {
           "legend": {
             "displayMode": "list",
@@ -877,6 +1077,264 @@
         ],
         "title": "After move · New 15 A (Server + Desktop + Office)",
         "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Average of the plugs on each circuit. Dashed: ANSI C84.1 range B limits (110 / 127 V), which the MainsVoltageLow/High alerts use. Normal here is 113-122 V. Live readings only (Sep 26 on).",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "axisBorderShow": false,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "lineWidth": 2,
+              "showPoints": "never",
+              "thresholdsStyle": {
+                "mode": "dashed"
+              }
+            },
+            "decimals": 1,
+            "max": 130,
+            "min": 105,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent",
+                  "value": null
+                },
+                {
+                  "color": "#fab219",
+                  "value": 110
+                },
+                {
+                  "color": "#fab219",
+                  "value": 127
+                }
+              ]
+            },
+            "unit": "volt"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Circuit A"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#9085e9",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Circuit B"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#8e8d86",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 27
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "avg by (circuit) ((smartlife_voltage_volts < 300) * on(device_id) group_left(circuit) smartlife_device_topology{level=\"top\",circuit!=\"\"})",
+            "legendFormat": "{{circuit}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Mains voltage by circuit",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "description": "Cost so far this calendar month against the same span of days a year earlier. Blank = no history a year back (Office starts Oct 2025, Desktop Jan 2026, Internet and Den Dec 2025).",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto"
+            },
+            "decimals": 2,
+            "unit": "currencyUSD"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Change"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "thresholds"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#0ca30c",
+                        "value": null
+                      },
+                      {
+                        "color": "#fab219",
+                        "value": 0.005
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "match": "nan",
+                        "result": {
+                          "color": "text",
+                          "text": "—"
+                        }
+                      },
+                      "type": "special"
+                    },
+                    {
+                      "options": {
+                        "match": "null",
+                        "result": {
+                          "color": "text",
+                          "text": "—"
+                        }
+                      },
+                      "type": "special"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 27
+        },
+        "hideTimeOverride": true,
+        "id": 16,
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "sum by (name) (sum_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:300s]) * 300 / 3.6e6 * on(device_id) group_left() smartlife_device_topology{level=\"top\"}) * $rate",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "efnh5gcimbv28f"
+            },
+            "expr": "sum by (name) (sum_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:300s] offset 1y) * 300 / 3.6e6 * on(device_id) group_left() smartlife_device_topology{level=\"top\"}) * $rate",
+            "format": "table",
+            "instant": true,
+            "refId": "B"
+          }
+        ],
+        "timeFrom": "now/M",
+        "title": "This month vs the same days last year",
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "renameByName": {
+                "Value #A": "This month",
+                "Value #B": "Last year",
+                "name": "Meter"
+              }
+            }
+          },
+          {
+            "id": "calculateField",
+            "options": {
+              "alias": "Change",
+              "binary": {
+                "left": "This month",
+                "operator": "-",
+                "right": "Last year"
+              },
+              "mode": "binary"
+            }
+          },
+          {
+            "id": "sortBy",
+            "options": {
+              "sort": [
+                {
+                  "desc": true,
+                  "field": "This month"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "table"
       },
       {
         "datasource": {
@@ -998,9 +1456,9 @@
           "h": 9,
           "w": 12,
           "x": 0,
-          "y": 23
+          "y": 35
         },
-        "id": 12,
+        "id": 17,
         "interval": "1h",
         "maxDataPoints": 48,
         "options": {
@@ -1185,10 +1643,10 @@
           "h": 9,
           "w": 6,
           "x": 12,
-          "y": 23
+          "y": 35
         },
         "hideTimeOverride": true,
-        "id": 13,
+        "id": 18,
         "options": {
           "displayMode": "basic",
           "namePlacement": "top",
@@ -1336,10 +1794,10 @@
           "h": 9,
           "w": 6,
           "x": 18,
-          "y": 23
+          "y": 35
         },
         "hideTimeOverride": true,
-        "id": 14,
+        "id": 19,
         "options": {
           "displayMode": "basic",
           "namePlacement": "top",
@@ -1540,9 +1998,9 @@
           "h": 12,
           "w": 24,
           "x": 0,
-          "y": 32
+          "y": 44
         },
-        "id": 15,
+        "id": 20,
         "options": {
           "displayMode": "basic",
           "namePlacement": "top",
@@ -1632,7 +2090,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 44
+          "y": 56
         },
         "id": 99,
         "panels": [
@@ -1733,9 +2191,9 @@
               "h": 10,
               "w": 24,
               "x": 0,
-              "y": 45
+              "y": 57
             },
-            "id": 16,
+            "id": 21,
             "targets": [
               {
                 "datasource": {
@@ -1862,6 +2320,6 @@
     "timezone": "browser",
     "title": "Home power",
     "uid": "smartlife-power",
-    "version": 13
+    "version": 15
   }
 }

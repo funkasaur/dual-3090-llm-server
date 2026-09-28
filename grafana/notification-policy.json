@@ -1,0 +1,23 @@
+{
+    "receiver": "Funkasaur LLM Bot",
+    "group_by": [
+        "grafana_folder",
+        "alertname"
+    ],
+    "routes": [
+        {
+            "receiver": "Funkasaur LLM Bot",
+            "object_matchers": [
+                [
+                    "alertname",
+                    "=",
+                    "DailyEnergyHigh"
+                ]
+            ],
+            "repeat_interval": "1d"
+        }
+    ],
+    "group_wait": "30s",
+    "group_interval": "5m",
+    "repeat_interval": "4h"
+}
