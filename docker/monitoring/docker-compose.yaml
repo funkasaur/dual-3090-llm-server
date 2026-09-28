@@ -116,6 +116,9 @@ services:
     restart: unless-stopped
     ports:
       - "9105:9105"
+    volumes:
+      # token-saver's llama-swap ledger (read-only): hourly token history from before llama-swap's own store
+      - /home/aiuser/hermes/hermes-data/plugin-data/token-saver:/ledger:ro
     networks:
       - ai-net
 
