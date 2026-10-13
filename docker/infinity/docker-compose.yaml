@@ -1,3 +1,5 @@
+# REMOVED 2026-10-05: replaced by docker/gemma-embed; the reranker was dropped (docs/reranker-test/).
+# Kept for reference and rollback (docs/rag-embeddings.md).
 # Embeddings and reranking.
 #
 # Split deliberately: the embedding model is small and runs on CPU so it never
