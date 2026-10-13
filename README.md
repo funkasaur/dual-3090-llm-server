@@ -165,6 +165,21 @@ models unloaded is 163W (12% load), leaving comfortable headroom under load.
 
 ---
 
+## Not published: the remote agent dashboard
+
+This box also runs coding agents (Claude Code, Codex, Gemini/Antigravity) in terminal sessions, and we wrote a
+private web dashboard and Android app to drive them from a phone or another machine. It lists live sessions and
+their state, streams a session's terminal, sends prompts and keys, starts and resumes sessions under different
+accounts, shows transcripts and file diffs, takes file uploads, and pushes notifications when an agent needs
+input. It runs on a patched [clauth](https://github.com/uwuclxdy/clauth) daemon and [herdr](https://herdr.dev).
+
+It is not in this repository on purpose. It is a remote-control surface for the machine, and as written it
+is tied to this network, its authentication, mounts and accounts, so publishing it as-is would invite unsafe
+copy-paste installs. A generic version, with safe defaults, TLS and authentication by design, and its own
+threat model and security review, may follow later as a separate project.
+
+---
+
 ## Using this
 
 Nothing here is a turnkey installer, and you should not run it as one — the
