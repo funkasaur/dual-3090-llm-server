@@ -8,7 +8,7 @@ Usage: python3 ledger_backfill.py <end_unix_ts> > ledger.om
 """
 import sqlite3, sys, bisect
 DB = "/home/aiuser/hermes/hermes-data/plugin-data/token-saver/llamaswap.sqlite"
-LBL = 'instance="10.0.0.26:9105",job="llama-swap-activity"'
+LBL = 'instance="192.0.2.26:9105",job="llama-swap-activity"'
 end = int(sys.argv[1])
 c = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
 first_req = c.execute("select min(ts) from requests").fetchone()[0]

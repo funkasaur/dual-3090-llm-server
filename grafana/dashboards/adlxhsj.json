@@ -1015,7 +1015,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "AI Server UPS (10.0.0.114) real power draw.",
+      "description": "AI Server UPS (192.0.2.114) real power draw.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1108,7 +1108,7 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "upsAdvanceOutputPower{instance=\"10.0.0.114\"}",
+          "expr": "upsAdvanceOutputPower{instance=\"192.0.2.114\"}",
           "range": true,
           "refId": "A"
         }
@@ -1193,7 +1193,7 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "upsAdvanceOutputCurrent{instance=\"10.0.0.114\"} / 10",
+          "expr": "upsAdvanceOutputCurrent{instance=\"192.0.2.114\"} / 10",
           "range": true,
           "refId": "A"
         }
@@ -1383,7 +1383,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "(upsAdvanceOutputCurrent{instance=\"10.0.0.114\"} * upsAdvanceOutputVoltage{instance=\"10.0.0.114\"}) / 100",
+          "expr": "(upsAdvanceOutputCurrent{instance=\"192.0.2.114\"} * upsAdvanceOutputVoltage{instance=\"192.0.2.114\"}) / 100",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1521,7 +1521,7 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "upsAdvanceOutputLoad{instance=\"10.0.0.114\"}",
+          "expr": "upsAdvanceOutputLoad{instance=\"192.0.2.114\"}",
           "legendFormat": "AI Server load",
           "range": true,
           "refId": "A"

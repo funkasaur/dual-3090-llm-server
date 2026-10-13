@@ -2084,7 +2084,7 @@
       "uid": "efnh5gcimbv28f"
      },
      "refId": "A",
-     "expr": "label_replace(label_replace(upsBaseOutputStatus, \"ups\", \"LLM Server UPS\", \"instance\", \"10.0.0.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"10.0.0.62\")",
+     "expr": "label_replace(label_replace(upsBaseOutputStatus, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\")",
      "instant": true,
      "legendFormat": "{{ups}}"
     }
@@ -2179,7 +2179,7 @@
       "uid": "efnh5gcimbv28f"
      },
      "refId": "A",
-     "expr": "label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\", \"LLM Server UPS\", \"instance\", \"10.0.0.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"10.0.0.62\")",
+     "expr": "label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\")",
      "instant": true,
      "legendFormat": "{{ups}}"
     }
@@ -2252,7 +2252,7 @@
       "uid": "efnh5gcimbv28f"
      },
      "refId": "A",
-     "expr": "label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining / 100, \"ups\", \"LLM Server UPS\", \"instance\", \"10.0.0.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"10.0.0.62\")",
+     "expr": "label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining / 100, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\")",
      "instant": true,
      "legendFormat": "{{ups}}"
     }
@@ -2325,7 +2325,7 @@
       "uid": "efnh5gcimbv28f"
      },
      "refId": "A",
-     "expr": "label_replace(label_replace(upsAdvanceBatteryReplaceIndicator, \"ups\", \"LLM Server UPS\", \"instance\", \"10.0.0.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"10.0.0.62\")",
+     "expr": "label_replace(label_replace(upsAdvanceBatteryReplaceIndicator, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\")",
      "instant": true,
      "legendFormat": "{{ups}}"
     }
@@ -2404,7 +2404,7 @@
       "uid": "efnh5gcimbv28f"
      },
      "refId": "A",
-     "expr": "label_replace(label_replace(upsAdvanceOutputPower, \"ups\", \"LLM Server UPS\", \"instance\", \"10.0.0.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"10.0.0.62\")",
+     "expr": "label_replace(label_replace(upsAdvanceOutputPower, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\")",
      "legendFormat": "{{ups}}"
     }
    ],
@@ -2482,7 +2482,7 @@
       "uid": "efnh5gcimbv28f"
      },
      "refId": "A",
-     "expr": "label_replace(label_replace(upsAdvanceInputLineVoltage / 10, \"ups\", \"LLM Server UPS\", \"instance\", \"10.0.0.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"10.0.0.62\")",
+     "expr": "label_replace(label_replace(upsAdvanceInputLineVoltage / 10, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\")",
      "legendFormat": "{{ups}}"
     }
    ],

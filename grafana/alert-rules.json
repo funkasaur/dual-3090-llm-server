@@ -2625,7 +2625,7 @@
     "for": "10m",
     "keep_firing_for": "0s",
     "annotations": {
-      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
       "description": "Server + Desktop + Office have averaged {{ humanize $values.A.Value }} A for 10+ minutes, above the 12 A continuous-load limit of a 15 A circuit. Shed load (GPU power limit, move a device) before it becomes routine.",
       "summary": "NewCircuitLoadHigh"
     },
@@ -2695,7 +2695,7 @@
     "for": "2m",
     "keep_firing_for": "0s",
     "annotations": {
-      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
       "description": "Server + Desktop + Office are drawing {{ humanize $values.A.Value }} A, close to the 15 A breaker rating. A sustained draw at this level can trip the breaker.",
       "summary": "NewCircuitOverload"
     },
@@ -2765,7 +2765,7 @@
     "for": "15m",
     "keep_firing_for": "0s",
     "annotations": {
-      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
       "description": "The Smart Life exporter has not completed a poll for 15 minutes, so circuit alerts are blind. Check `docker logs smartlife-exporter` (a login token expiry needs login.py again).",
       "summary": "SmartLifeExporterDown"
     },
@@ -2852,7 +2852,7 @@
     "for": "1h",
     "keep_firing_for": "0s",
     "annotations": {
-      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
       "description": "The last 24 hours used {{ printf \"%.1f\" $values.B.Value }} kWh, {{ humanizePercentage $values.A.Value }} of the previous week's daily average. Something may have been left running - check Power by meter on the dashboard.",
       "summary": "Energy use well above normal"
     },
@@ -2922,7 +2922,7 @@
     "for": "5m",
     "keep_firing_for": "0s",
     "annotations": {
-      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
       "description": "Mains voltage on {{ $labels.circuit }} has averaged {{ printf \"%.1f\" $values.A.Value }} V for 5+ minutes, above the 127 V ANSI C84.1 limit (normal here: 113-122 V). Worth reporting to the utility if it persists.",
       "summary": "Mains voltage high"
     },
@@ -2992,7 +2992,7 @@
     "for": "5m",
     "keep_firing_for": "0s",
     "annotations": {
-      "dashboard": "http://10.0.0.26:2000/d/smartlife-power/home-power",
+      "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
       "description": "Mains voltage on {{ $labels.circuit }} has averaged {{ printf \"%.1f\" $values.A.Value }} V for 5+ minutes, below the 110 V ANSI C84.1 limit (normal here: 113-122 V). Brown-out or an overloaded circuit; the UPS units may start switching to battery.",
       "summary": "Mains voltage low"
     },

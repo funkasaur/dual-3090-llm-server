@@ -224,8 +224,8 @@ panels.append(panel("bargauge", "Inside each meter (average power, selected rang
 
 # ---- UPS (CyberPower RMCARD over SNMP, job cyberpower_ups) ------------------------------
 def ups(expr):   # name the two UPSes after what they power
-    return (f'label_replace(label_replace({expr}, "ups", "LLM Server UPS", "instance", "10.0.0.114"),'
-            f' "ups", "Desktop UPS", "instance", "10.0.0.62")')
+    return (f'label_replace(label_replace({expr}, "ups", "LLM Server UPS", "instance", "192.0.2.114"),'
+            f' "ups", "Desktop UPS", "instance", "192.0.2.62")')
 UPS_Y = 56
 def ups_stat(title, x, expr, unit, desc, **fc):
     return panel("stat", title, x, UPS_Y, 6, 5, [dict(expr=ups(expr), instant=True, legendFormat="{{ups}}")],

@@ -78,7 +78,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsBaseOutputStatus, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\")",
+          "expr": "label_replace(label_replace(upsBaseOutputStatus, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -150,7 +150,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsBaseBatteryStatus, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\")",
+          "expr": "label_replace(label_replace(upsBaseBatteryStatus, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -217,7 +217,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputLoad, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\")",
+          "expr": "label_replace(label_replace(upsAdvanceOutputLoad, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -284,7 +284,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\") / 6000",
+          "expr": "label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 6000",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -341,7 +341,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputPower, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\")",
+          "expr": "label_replace(label_replace(upsAdvanceOutputPower, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -398,7 +398,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace((upsAdvanceOutputCurrent * upsAdvanceOutputVoltage) / 100, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\")",
+          "expr": "label_replace(label_replace((upsAdvanceOutputCurrent * upsAdvanceOutputVoltage) / 100, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -455,7 +455,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputCurrent, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\") / 10",
+          "expr": "label_replace(label_replace(upsAdvanceOutputCurrent, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -512,7 +512,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceInputLineVoltage, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\") / 10",
+          "expr": "label_replace(label_replace(upsAdvanceInputLineVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
           "instant": false,
           "legendFormat": "{{ups}} \u2014 input",
           "range": true,
@@ -523,7 +523,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputVoltage, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\") / 10",
+          "expr": "label_replace(label_replace(upsAdvanceOutputVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
           "instant": false,
           "legendFormat": "{{ups}} \u2014 output",
           "range": true,
@@ -592,7 +592,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\")",
+          "expr": "label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -644,7 +644,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceBatteryVoltage, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\") / 10",
+          "expr": "label_replace(label_replace(upsAdvanceBatteryVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -713,7 +713,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputFrequency, \"ups\",\"AI Server\",\"instance\",\"10.0.0.114\"), \"ups\",\"Desktop\",\"instance\",\"10.0.0.62\") / 10",
+          "expr": "label_replace(label_replace(upsAdvanceOutputFrequency, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,

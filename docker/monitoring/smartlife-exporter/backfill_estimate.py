@@ -1,5 +1,5 @@
 """30-day estimate of per-plug power before the smartlife exporter existed.
-UPS-backed: LLM Server = 0.991 x UPS 10.0.0.114; Office = that + 73.2 W; Desktop = 1.031 x UPS 10.0.0.62.
+UPS-backed: LLM Server = 0.991 x UPS 192.0.2.114; Office = that + 73.2 W; Desktop = 1.031 x UPS 192.0.2.62.
 Flat (tonight's average): the rest. Ratios/averages measured 2026-09-26 21:10-22:00."""
 import json, time, urllib.request, urllib.parse
 END = int(time.mktime(time.strptime("2026-09-26 21:06", "%Y-%m-%d %H:%M")))   # first real sample 21:07
@@ -12,8 +12,8 @@ def rng(q, s, e, step=60):
         r = json.load(urllib.request.urlopen(u))["data"]["result"]
         if r: out.update({int(float(t)): float(v) for t, v in r[0]["values"]})
     return out
-u114 = rng('avg_over_time(upsAdvanceOutputPower{instance="10.0.0.114"}[1m])', START, END)
-u62 = rng('avg_over_time(upsAdvanceOutputPower{instance="10.0.0.62"}[1m])', START, END)
+u114 = rng('avg_over_time(upsAdvanceOutputPower{instance="192.0.2.114"}[1m])', START, END)
+u62 = rng('avg_over_time(upsAdvanceOutputPower{instance="192.0.2.62"}[1m])', START, END)
 ids = {m["metric"]["name"]: m["metric"]["device_id"] for m in json.load(urllib.request.urlopen(
     "http://localhost:2090/api/v1/query?query=smartlife_device_topology"))["data"]["result"]}
 FLAT = {"Server": 168.9, "Brocade Switch": 56.1, "Optiplex 7070 SFF": 35.0, "Desk": 30.3,

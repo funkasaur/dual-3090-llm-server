@@ -22,8 +22,8 @@ scrape_configs:
   - job_name: 'cyberpower_ups'
     static_configs:
       - targets:
-        - 10.0.0.114  # The IP address of the Server's UPS
-        - 10.0.0.62  # The IP address of the Desktop's UPS
+        - 192.0.2.114  # The IP address of the Server's UPS
+        - 192.0.2.62  # The IP address of the Desktop's UPS
     metrics_path: /snmp
     params:
       module: [cyberpower]    # Tells the exporter to use the built-in CyberPower map
@@ -37,10 +37,10 @@ scrape_configs:
         replacement: snmp-exporter:9116  # Docker DNS name routing
   - job_name: 'llama-swap'
     static_configs:
-      - targets: ['10.0.0.26:3060']
+      - targets: ['192.0.2.26:3060']
   - job_name: 'llama-swap-activity'
     static_configs:
-      - targets: ['10.0.0.26:9105']
+      - targets: ['192.0.2.26:9105']
   - job_name: 'smartlife'
     scrape_interval: 60s
     static_configs:
