@@ -20,20 +20,24 @@ regress after that config change?*
 All of it pinned to CCD1. Monitoring that perturbs the thing it measures is
 worse than no monitoring.
 
-## Per-CCD temperatures: zenpower3
+## Per-CCD temperatures: zenpower5
 
 The in-tree `k10temp` driver reports a single aggregate die temperature on
 Ryzen, which is useless when the entire point of your configuration is that
 the two CCDs are doing different work.
 
-[`zenpower3`](https://github.com/ocerman/zenpower3) exposes per-CCD
-temperature, per-core power and current. That lets you see whether the
-inference die is running hotter than the database die — and it is the only way
-to confirm that a thermal excursion is coming from where you think it is.
+[`zenpower5`](https://github.com/mattkeenan/zenpower5) exposes per-CCD
+temperature, plus SVI2 core and SoC voltage, current and power. That lets you
+see whether the inference die is running hotter than the database die — and it
+is the only way to confirm that a thermal excursion is coming from where you
+think it is.
+
+zenpower5 is a newer fork than `zenpower3`: it adds RAPL power and Zen 4/5
+support. On a Zen 3 part both read the same SVI2 sensors. The module is still called `zenpower`; this box runs 0.5.0.
 
 ```bash
 sudo apt install dkms build-essential
-git clone https://github.com/ocerman/zenpower3 && cd zenpower3
+git clone https://github.com/mattkeenan/zenpower5 && cd zenpower5
 sudo dkms install .
 echo zenpower | sudo tee /etc/modules-load.d/zenpower.conf
 
