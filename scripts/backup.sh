@@ -181,6 +181,11 @@ fi
 # ---------------------------------------------------------------------------
 log "Running Borg create..."
 
+# Rebuildable bulk is left out: --exclude-caches skips every dir holding a
+# CACHEDIR.TAG (Rust target/, ~/.cargo/registry, uv .venv, mypy/ruff/pytest
+# caches); the rest are downloaded toolchains and package caches that a
+# reinstall fetches again.
+
 borg create \
     --verbose \
     --stats \
@@ -198,6 +203,9 @@ borg create \
     --exclude 'sh:**/node_modules' \
     --exclude 'sh:**/__pycache__' \
     --exclude '/home/*/qdrant/qdrant_storage' \
+    --exclude-caches \
+    --exclude 'sh:/home/*/.rustup/toolchains' \
+    --exclude 'sh:/home/*/.npm/_cacache' \
     --exclude '/var/lib/docker' \
     --exclude /mnt \
     --exclude /proc \
@@ -221,3 +229,25 @@ log "Prune complete."
 log "Compacting repository..."
 borg compact
 log "Compact complete."
+# ---------------------------------------------------------------------------
+# Offsite (optional): mirror the repository to an rclone remote
+# ---------------------------------------------------------------------------
+# The repository is already encrypted and deduplicated, so this uploads only the
+# segments that changed tonight, and the remote holds only ciphertext. `borg
+# with-lock` keeps any other borg process out while rclone reads it. Set
+# RCLONE_DEST (e.g. gdrive:llm-server/borg) to enable; give root its own rclone
+# config, since a shared one can end up root-owned after a token refresh. Google
+# Drive keeps files that `sync` removes in its trash for 30 days, which is the net
+# if a damaged local repository is ever mirrored up.
+RCLONE="${RCLONE:-rclone}"
+RCLONE_DEST="${RCLONE_DEST:-}"
+if [[ -z $RCLONE_DEST ]]; then
+    log "Offsite sync not configured (RCLONE_DEST unset); skipping."
+elif command -v "$RCLONE" >/dev/null && "$RCLONE" listremotes 2>/dev/null | grep -qx "${RCLONE_DEST%%:*}:"; then
+    log "Syncing repository to ${RCLONE_DEST}..."
+    borg with-lock "$BORG_REPO" "$RCLONE" sync "$BORG_REPO" "$RCLONE_DEST" \
+        --transfers 4 --checkers 8 --retries 3 --drive-chunk-size 64M --stats-one-line --stats 0 -v
+    log "Offsite sync complete."
+else
+    log "WARNING: no rclone remote '${RCLONE_DEST%%:*}' for this user; repository NOT copied offsite."
+fi
