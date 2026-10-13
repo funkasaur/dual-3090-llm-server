@@ -42,6 +42,8 @@ most useful file here.
 
 ## Hardware
 
+<p align="center"><img src="docs/images/server.jpg" alt="The server: NZXT H9 Flow with two NVLink-bridged ASUS ROG Strix RTX 3090s, an Arctic Liquid Freezer III 420 and an MSI MEG X570 GODLIKE" width="480"></p>
+
 | Component | Part |
 |---|---|
 | CPU | AMD Ryzen 9 5950X — 16C/32T, two CCDs, 32MB L3 per CCD |
