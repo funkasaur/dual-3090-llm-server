@@ -41,3 +41,7 @@ docker/monitoring/auth.yml
 
 # Smart Life exporter: Tuya/Home Assistant/Smart Life credentials and tokens
 docker/monitoring/smartlife-exporter/data/
+
+# Python bytecode
+__pycache__/
+*.pyc
