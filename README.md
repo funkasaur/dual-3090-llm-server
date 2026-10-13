@@ -27,10 +27,12 @@ most useful file here.
 | [`docs/irq-pinning.md`](docs/irq-pinning.md) | Interrupt isolation — including why the obvious target is the wrong one |
 | [`docs/inference.md`](docs/inference.md) | llama-swap + llamAmpere / ik_llama, NVLink, measured throughput by context |
 | [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / DCGM / SNMP |
-| [`docs/backups.md`](docs/backups.md) | Two layers: Borg file-level, Veeam image-level |
+| [`docs/backups.md`](docs/backups.md) | Borg file-level + Veeam image-level, with off-machine copies (Google Drive, a second machine's RAID) |
+| [`docs/rag-embeddings.md`](docs/rag-embeddings.md) | Moving Open WebUI RAG to EmbeddingGemma: migration, rollback, and why the reranker went ([test](docs/reranker-test/README.md)) |
 | [`docs/veeam-linux-repository.md`](docs/veeam-linux-repository.md) | Using the Linux box as a Veeam repository, and why the SMB workaround costs you |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | **Findings from auditing this setup against the live machine** |
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
+| [`llamampere/`](llamampere/README.md) | Pinned llamAmpere build + local patches for the main model |
 | [`systemd/`](systemd/) | Units for the above |
 | [`docker/`](docker/) | Compose files for the whole stack, secrets parameterised |
 | [`veeam/`](veeam/) | Guest pre-freeze / post-thaw scripts (patched) |
@@ -77,7 +79,7 @@ it:
 CCD0 — cores 0-7  (L3 pool #0)        CCD1 — cores 8-15 (L3 pool #1)
 ├─ 0-4  inference  (+SMT 16-20)       └─ 8-15 everything else (+SMT 24-31)
 ├─ 5-6  web/ingress (+SMT 21-22)         postgres, qdrant, embeddings,
-└─ 7    GPU interrupts (+SMT 23)         reranker, tika, agents, monitoring
+└─ 7    GPU interrupts (+SMT 23)         tika, agents, monitoring
 ```
 
 Inference gets five physical cores and an uncontended slice of L3. The RAG
@@ -135,12 +137,15 @@ All of it is in [`docker/`](docker/), secrets parameterised, one directory per u
 
 - **Frontend** — Open WebUI (CCD0, next to the engine)
 - **Data** — PostgreSQL (chat history), Qdrant (vectors)
-- **RAG** — Infinity embeddings (CPU) + reranker (GPU), Apache Tika extraction
+- **RAG** — EmbeddingGemma-300m Q8 on llama.cpp (`gemma-embed`, CPU, since 2026-10-05; replaced
+  Infinity/nomic), Apache Tika 4 extraction (pinned). The GPU reranker (bge-reranker-v2-m3) was removed: it
+  lowered nDCG@10 by ~4 points against no reranker ([test](docs/reranker-test/README.md)); hybrid search is off
 - **Ingress** — `cloudflared` Zero Trust tunnel, no inbound ports opened
 - **Observability** — Prometheus, Grafana, node-exporter, dcgm-exporter,
   snmp-exporter, plus a small custom exporter for llama-swap tokens/sec
 - **Backups** — two layers: Borg nightly with Postgres/Qdrant pre-hooks, plus
-  Veeam image-level backup with guest freeze/thaw scripts
+  Veeam image-level backup with guest freeze/thaw scripts; the Borg repository is
+  synced to Google Drive nightly and Veeam copies to a RAID on another machine
 
 ---
 
