@@ -52,21 +52,21 @@ services:
       - VECTOR_DB=qdrant
       - QDRANT_URI=http://qdrant:6333
 
-      # --- Embeddings (Infinity, CPU) ---
+      # --- Embeddings (gemma-embed, CPU) ---
       - RAG_EMBEDDING_ENGINE=openai
-      - RAG_EMBEDDING_OPENAI_API_BASE_URL=http://infinity-embed:7997/v1
+      # EmbeddingGemma task prefixes (env-only in 0.11.3; quoted so the trailing space survives)
+      - "RAG_EMBEDDING_QUERY_PREFIX=task: search result | query: "
+      - "RAG_EMBEDDING_CONTENT_PREFIX=title: none | text: "
+      - RAG_EMBEDDING_OPENAI_API_BASE_URL=http://gemma-embed:7997/v1
       - RAG_OPENAI_API_KEY=${RAG_OPENAI_API_KEY}
-      - RAG_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5
+      - RAG_EMBEDDING_MODEL=ggml-org/embeddinggemma-300M-GGUF:Q8_0
 
-      # --- Reranking (Infinity, GPU) ---
-      - RAG_RERANKING_ENGINE=external
-      - RAG_EXTERNAL_RERANKER_URL=http://infinity-rerank:7998/rerank
-      - RAG_EXTERNAL_RERANKER_API_KEY=${RAG_EXTERNAL_RERANKER_API_KEY}
-      - RAG_RERANKING_MODEL=BAAI/bge-reranker-v2-m3
+      # Reranker removed 2026-10-05 (infinity-rerank deleted; hybrid search off).
 
       # --- Document extraction ---
       - CONTENT_EXTRACTION_ENGINE=tika
       - TIKA_SERVER_URL=http://tika:9998
+      - TIKA_SERVER_VERSION=4  # Tika 4 API; must match the pinned image in docker/tika
     restart: unless-stopped
 
 volumes:

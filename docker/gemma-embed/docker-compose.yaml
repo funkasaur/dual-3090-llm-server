@@ -1,0 +1,31 @@
+# EmbeddingGemma-300m Q8_0 on llama.cpp: the embedder for Open WebUI RAG since 2026-10-05.
+# Replaced Infinity (nomic-embed-text-v1.5 on CPU + bge-reranker-v2-m3 on GPU); see docs/rag-embeddings.md.
+# CPU-only on purpose: the load is a few short embeds a minute, and a GPU copy would sit beside the
+# main model where llama-swap cannot see it. The image's own healthcheck probes :8080, so it is overridden.
+services:
+  gemma-embed:
+    image: ghcr.io/ggml-org/llama.cpp@sha256:559ac229adefe0f7e2d4e32f5222f26927b6bb8ba44b9db08e2544afebf41984
+    container_name: gemma-embed
+    restart: unless-stopped
+    cpuset: "8-11"
+    cpu_shares: 256
+    mem_limit: 2g
+    environment:
+      LLAMA_CACHE: /models
+    volumes:
+      - ./models:/models
+    command: >
+      -hf ggml-org/embeddinggemma-300M-GGUF:Q8_0
+      --embedding --pooling mean -c 2048 -b 2048 -ub 2048 -t 4
+      --host 0.0.0.0 --port 7997
+    ports:
+      - "127.0.0.1:7998:7997"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7997/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [ai-net]
+networks:
+  ai-net:
+    external: true
