@@ -23,7 +23,9 @@ OUT="${TEXTFILE_DIR}/llm_watchdog.prom"
 mkdir -p "$STATE_DIR" "$TEXTFILE_DIR"
 fails=$(cat "$STATE_DIR/fails" 2>/dev/null || echo 0)
 unloads=$(cat "$STATE_DIR/unloads" 2>/dev/null || echo 0)
+unload_failures=$(cat "$STATE_DIR/unload_failures" 2>/dev/null || echo 0)
 loaded=0
+router_up=1   # 0 when llama-swap's /running could not be read; the probe is then skipped, not passed
 ok=1          # "not loaded" is not a failure; only a loaded, ready model is probed
 tokens=-1
 
@@ -45,30 +47,44 @@ if [ "$state" = "ready" ]; then
         echo "probe FAILED ($fails/$FAILS_TO_ACT): /tokenize returned $tokens tokens, expected $EXPECTED_TOKENS"
         if [ "$fails" -ge "$FAILS_TO_ACT" ]; then
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 -X POST "$SWAP/api/models/unload/$MODEL")
-            unloads=$((unloads + 1))
-            fails=0
-            echo "UNLOADED $MODEL (llama-swap HTTP $code); next request reloads it. unloads total: $unloads"
+            if [[ "$code" == 2?? ]]; then
+                unloads=$((unloads + 1))
+                fails=0
+                echo "UNLOADED $MODEL (llama-swap HTTP $code); next request reloads it. unloads total: $unloads"
+            else
+                # Keep fails at the threshold so the next run retries the unload.
+                unload_failures=$((unload_failures + 1))
+                echo "UNLOAD FAILED for $MODEL (llama-swap HTTP $code); retrying next run. failures total: $unload_failures"
+            fi
         fi
     fi
 elif [ "$state" = "error" ]; then
+    router_up=0
     echo "llama-swap /running unreachable; skipping probe"
 fi
 
 echo "$fails" > "$STATE_DIR/fails"
 echo "$unloads" > "$STATE_DIR/unloads"
+echo "$unload_failures" > "$STATE_DIR/unload_failures"
 
 # Atomic write: a partial file is a parse error that discards node-exporter's whole textfile output.
 tmp="$(mktemp "${OUT}.XXXXXX")"
 cat > "$tmp" <<EOF
-# HELP llm_watchdog_tokenize_ok 1 if the loaded model tokenized the probe correctly (or is not loaded), 0 if not.
+# HELP llm_watchdog_tokenize_ok 1 if the loaded model tokenized the probe correctly (or is not loaded, or llama-swap was unreachable), 0 if not.
 # TYPE llm_watchdog_tokenize_ok gauge
 llm_watchdog_tokenize_ok{model="$MODEL"} $ok
 # HELP llm_watchdog_model_loaded 1 if the watched model was loaded and ready at probe time.
 # TYPE llm_watchdog_model_loaded gauge
 llm_watchdog_model_loaded{model="$MODEL"} $loaded
-# HELP llm_watchdog_unloads_total Times the watchdog force-unloaded the model after consecutive failed probes.
+# HELP llm_watchdog_unloads_total Times the watchdog force-unloaded the model (llama-swap answered 2xx) after consecutive failed probes.
 # TYPE llm_watchdog_unloads_total counter
 llm_watchdog_unloads_total{model="$MODEL"} $unloads
+# HELP llm_watchdog_unload_failures_total Unload attempts that llama-swap did not answer with 2xx.
+# TYPE llm_watchdog_unload_failures_total counter
+llm_watchdog_unload_failures_total{model="$MODEL"} $unload_failures
+# HELP llm_watchdog_router_up 1 if llama-swap /running answered this run, 0 if not (tokenize_ok is then not a test result).
+# TYPE llm_watchdog_router_up gauge
+llm_watchdog_router_up $router_up
 # HELP llm_watchdog_last_probe_timestamp_seconds When the watchdog last ran.
 # TYPE llm_watchdog_last_probe_timestamp_seconds gauge
 llm_watchdog_last_probe_timestamp_seconds $(date +%s)
