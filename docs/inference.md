@@ -80,15 +80,27 @@ GPU 1: 4 links @ 14.062 GB/s
 | MTP draft head | runs on one card | own buffers on each card |
 | GPU busy while decoding | 72% / 85% (uneven) | 90% / 90% |
 | Quantised KV | supported | supported (mainline llama.cpp refuses it in tensor mode; the fork lifted that) |
-| Sampling | GPU | CPU (forced by tensor mode; measured, not a bottleneck) |
+| Sampling | GPU | CPU (forced by tensor mode; profiled 2026-10-12: with ~50 host syncs per step, both GPUs idle ~17% of decode) |
 
-**`--tensor-split 49.5,50.5`.** With 262k context both cards are nearly full,
-and GPU0 also hosts the reranker (~1.7 GB), whose memory grows with request
-size. The split moves in coarse ~1.9 GB steps: 50/50 leaves ~0.8 GB free on
-GPU0; 49.5/50.5 leaves ~2.5 GB on GPU0 and ~0.7 GB on GPU1 (47/53 runs out of
-memory on GPU1). The engine reserves all of its own memory at startup, so the
-headroom belongs on the card with the *other* tenant. Verified through a 245k
-token cold prefill: peak 22.1 / 23.9 GB, no growth.
+**`--tensor-split 50,50`** (since 2026-10-13). Weights even, VRAM ~20.5 / 20.5 GB
+on v0.5.2, flat through a 240k request (~3.4 GB free on each card). The split
+moves in coarse ~1.6-1.7 GB steps (49.5 and 49.9 = the old layout, 18.8 / 22.3 GB;
+50.25-51 = 22.1 / 19.0 GB). The old 49.5,50.5 left room on GPU0 for the reranker
+(removed 2026-10-05) but put a whole weight step more on GPU1, and in tensor mode
+the cards sync ~130 times per decode step, so GPU0 waited on GPU1 (profiled:
+11-17% of GPU0's time spent in the all-reduce vs ~4% on GPU1). A/B with 10 runs
+per cell: 50/50 decode +0.9% at 33k (noise), +6.3% at 108k, +5.4% at 150k;
+50.25 overshoots (GPU0 becomes the slow card). With another tenant on a
+card, the headroom belongs on that card.
+
+**CUDA graph cache cap, patch 0003** (since 2026-10-13). In tensor mode
+each decode round runs ~130 CUDA graph segments per card (one per stretch between
+all-reduces), but ggml-cuda caches only 64 graphs per card (LRU). Every graph was
+evicted before its next use, so nearly every kernel launched eagerly (ledger: 241k
+eager launches vs 18k replays per two 33k requests). Patch 0003 reads the cap from
+`GGML_CUDA_MAX_GRAPHS` (unset = 64); the live entry sets 512. Evictions drop to 0,
+decode +3.8-4.4% at 33k-150k (10 runs per cell), numerics identical (KL 0), stress
+clean, +84 MiB VRAM per card. Details: [`llamampere/README.md`](../llamampere/README.md).
 
 ## Speculative decoding (MTP)
 

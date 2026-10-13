@@ -1,0 +1,32 @@
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index a3d93b9..897dc45 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1673,7 +1673,17 @@ struct ggml_backend_cuda_context {
+ #ifdef USE_CUDA_GRAPH
+     std::unordered_map<uint64_t, std::unique_ptr<ggml_cuda_graph>> cuda_graphs;
+ 
+-    static const size_t max_cuda_graphs = 64;
++    // GGML_CUDA_MAX_GRAPHS (default 64): LRU cap on cached cuda graphs. Tensor split with a drafter cycles ~130
++    // graph segments per card per decode round, so 64 evicts every graph before its next use and nearly all
++    // kernels launch eagerly; raise it to keep the whole round captured.
++    static size_t max_cuda_graphs() {
++        static const size_t v = [] {
++            const char * s = getenv("GGML_CUDA_MAX_GRAPHS");
++            const long n = s ? atol(s) : 64;
++            return (size_t) (n > 0 ? n : 64);
++        }();
++        return v;
++    }
+ 
+     int64_t last_graph_eviction_sweep = 0;
+ 
+@@ -1702,7 +1712,7 @@ struct ggml_backend_cuda_context {
+ 
+         auto it = cuda_graphs.find(graph_key);
+         if (it == cuda_graphs.end()) {
+-            while (cuda_graphs.size() >= max_cuda_graphs) {
++            while (cuda_graphs.size() >= max_cuda_graphs()) {
+                 auto lru = cuda_graphs.begin();
+                 for (auto c = cuda_graphs.begin(); c != cuda_graphs.end(); ++c) {
+                     if (c->second->last_used_time < lru->second->last_used_time) {

@@ -5,10 +5,10 @@
 #   usage: ./build.sh            (builds the pinned commit + patches/*.patch in a throwaway container)
 set -euo pipefail
 cd "$(dirname "$0")"
-COMMIT=2cb16936b5d081a92f1d0369954561efb6d1e2c7   # JakeATX/llamAmpere main, 2026-09-19 (PR #10 merge; includes v0.3.1)
+COMMIT=d5b0ba7c5b2c9ec46f8746a491f6fb13c5a431f2   # JakeATX/llamAmpere tag v0.5.2, 2026-10-11 (old patch 0001 is upstream there as dc2b130)
 IMAGE=nvidia/cuda:12.9.1-devel-ubuntu24.04
 rm -rf bin.new && mkdir -p bin.new
-docker run --rm --cpuset-cpus 5-31 -u 0 -v "$PWD":/work "$IMAGE" bash -c "
+docker run --rm --cpuset-cpus 5-31 --memory 24g -u 0 -v "$PWD":/work "$IMAGE" bash -c "
   set -euo pipefail
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq >/dev/null && apt-get install -y -qq git cmake build-essential libssl-dev >/dev/null
@@ -17,7 +17,7 @@ docker run --rm --cpuset-cpus 5-31 -u 0 -v "$PWD":/work "$IMAGE" bash -c "
   for p in /work/patches/*.patch; do echo \"applying \$(basename \$p)\"; git apply \"\$p\"; done
   cmake -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF \
         -DLLAMA_CURL=OFF -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined >/work/bin.new/cmake.log 2>&1
-  cmake --build build --target llama-server -j 27 >/work/bin.new/build.log 2>&1
+  cmake --build build --target llama-server -j \$(nproc) >/work/bin.new/build.log 2>&1
   cp build/bin/llama-server /work/bin.new/ && find build -name '*.so*' -exec cp -a {} /work/bin.new/ \;
   echo \"$COMMIT + \$(ls /work/patches | tr '\n' ' ')\" > /work/bin.new/VERSION
   chown -R $(id -u):$(id -g) /work/bin.new

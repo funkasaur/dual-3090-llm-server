@@ -97,7 +97,7 @@ turned out to matter much less than expected.
 
 | `cpuset` | Runs |
 |---|---|
-| `8-15,24-31` | postgres, qdrant, infinity-embed, infinity-rerank, tika, cloudflared, monitoring stack, agents |
+| `8-15,24-31` | postgres, qdrant, gemma-embed (8-11), tika, cloudflared, monitoring stack, agents |
 
 Everything here is cache-hostile: vector search walks large indexes, chunking
 streams text, Postgres does random I/O, Tika allocates aggressively in a JVM.

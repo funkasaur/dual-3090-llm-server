@@ -27,8 +27,9 @@ models:
   # layer on the GPUs, generation keeps one core busy, so 5/5 is plenty.
   #
   # --split-mode tensor: tensor parallelism over NVLink (NCCL). --tensor-split
-  # 49.5,50.5 leaves ~2.5 GB free on GPU0 for the reranker that shares it; the
-  # split moves in ~1.9 GB steps, and 47/53 runs GPU1 out of memory.
+  # 50,50 puts even weights on both cards (~20.5 GB each); the split moves in
+  # ~1.6-1.7 GB steps. An uneven split makes one card wait at every sync
+  # (49.5,50.5 cost 5-6% decode at 108-150k; see docs/inference.md).
   #
   # --cache-ram: host-RAM prompt cache. With local patch 0001 a ~130k session
   # costs ~7 GB, so 32 GB holds about four before evicting one.
@@ -46,7 +47,7 @@ models:
       --threads 5
       --threads-batch 5
       --split-mode tensor
-      --tensor-split 49.5,50.5
+      --tensor-split 50,50
       --flash-attn on
       --cache-type-k q8_0
       --cache-type-v q8_0
@@ -69,6 +70,9 @@ models:
       # Replaces the container's LD_LIBRARY_PATH, so the CUDA path is repeated.
       - "LD_LIBRARY_PATH=/opt/llamampere:/usr/local/cuda/lib64"
       - "GGML_Q8_TURBO3_MMA_FUSED=1"
+      # Local patch 0003 (llamampere/patches/): CUDA graph cache cap. 64 thrashes
+      # under tensor split (~130 graphs per card per decode round); 512 is +4% decode.
+      - "GGML_CUDA_MAX_GRAPHS=512"
     # ttl: 0 keeps this model resident forever. Use it for the model you
     # actually work in, so you never pay the reload cost.
     ttl: 0
@@ -92,6 +96,7 @@ models:
       --cache-ram 16384
       --split-mode graph
       --spec-type mtp:n_max=4,p_min=0.8
+      --merge-up-gate-experts
       --ctx-checkpoints 16
       --jinja
       --flash-attn on
