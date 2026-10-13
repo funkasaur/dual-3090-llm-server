@@ -1,11 +1,12 @@
 # Backups
 
-Two independent layers, both active, answering different questions:
+Two independent layers, both active, answering different questions, plus off-machine copies of both
+(see [Off-site copies](#off-site-copies)):
 
 | | Borg | Veeam |
 |---|---|---|
 | Scope | Files: `/etc`, `/home`, `/opt`, `/root`, dumps | Whole-machine image |
-| Runs | Nightly 03:00, on the host via systemd | From a Windows Veeam B&R server over SMB |
+| Runs | Nightly 03:00, on the host via systemd | Managed by a Windows Veeam B&R server; writes to a Veeam Linux repository on this host |
 | Consistency | Logical dumps taken first (pre-hooks) | Containers stopped around the snapshot |
 | Answers | *"What did this database look like on Tuesday?"* | *"The boot drive died — make the machine exist again."* |
 | Restore granularity | Single file, in seconds | Bare metal |
@@ -167,25 +168,25 @@ Qdrant goes through the snapshot API, not by copying files back:
 ```bash
 curl -X PUT 'http://localhost:6333/collections/<name>/snapshots/recover' \
   -H 'Content-Type: application/json' \
-  -d '{"location":"file:///qdrant/storage/snapshots/<name>/<snapshot>.snapshot"}'
+  -d '{"location":"file:///qdrant/snapshots/<name>/<snapshot>.snapshot"}'
 ```
 
 ---
 
 ## Layer 2 — Veeam (image-level)
 
-A Windows Veeam B&R server backs up this host over the network, writing into a
-repository on an SMB share exported from the Linux box itself:
+A Windows Veeam B&R server manages Veeam Agent for Linux on this host. Since
+2026-09-29 the job writes to a **Veeam Linux repository** on this box (see
+[veeam-linux-repository.md](veeam-linux-repository.md)), and a Backup Copy job
+sends each restore point to a RAID array on another machine. The repository
+volume is ext4, so there is still no Fast Clone or immutability.
 
-```ini
-[WindowsShare]
-   comment = Network Share for Windows Servers
-   path = /mnt/storage
-```
+Until then it wrote to an SMB share exported from the Linux box itself
+(`[WindowsShare]`, `path = /mnt/storage`).
 
 Backup chain shape: weekly full (`.vbk`) with daily incrementals (`.vib`).
 
-> **The SMB share is a workaround for a constraint that isn't there.** Veeam
+> **The SMB share was a workaround for a constraint that isn't there.** Veeam
 > B&R Community Edition must run on Windows, but that restricts the backup
 > *server*, not the repository — a Linux server can be added as a repository
 > directly, no licence required. Routing through an SMB share sends every byte
@@ -196,9 +197,8 @@ Backup chain shape: weekly full (`.vbk`) with daily incrementals (`.vib`).
 > **Note the topology.** `/mnt/storage` is a dedicated NVMe, separate from the
 > OS drive, so a failed boot disk leaves the image backups intact — which is
 > the case bare-metal restore is for. But *both* backup systems live on that
-> one drive (Borg 92 GB, Veeam 1.3 TB), so they share a single failure domain
-> despite being chosen to fail independently. It is a good local restore tier,
-> not an off-site copy. See
+> one drive (Borg 92 GB, Veeam 1.3 TB at the audit), so on this box they share
+> a single failure domain. That is why the off-machine copies below exist. See
 > [AUDIT #9a](AUDIT.md#9a-both-backup-systems-share-one-failure-domain).
 
 ### Freezing the stack around the snapshot
@@ -227,6 +227,13 @@ pair.
 
 Full details and a test procedure in [`veeam/README.md`](../veeam/README.md).
 
+> **Fixed 2026-10-04, verified by a 2026-10-11 run.** An earlier run stopped
+> all three containers within the same millisecond and wrote no
+> `/var/log/veeam-freeze.log`: the job's script paths pointed at the wrong
+> directory on the VBR server. With the paths corrected, the 2026-10-11 run
+> logged the failsafe armed, containers stopped one at a time, thaw cancelling
+> the failsafe, and the stack healthy about 40 seconds after the start.
+
 Measured downtime on a real run: **~11 seconds**.
 
 ```
@@ -251,6 +258,20 @@ Agent for Linux supports application-aware processing that can call
 `pg_start_backup()` / `pg_stop_backup()` and handle WAL truncation without any
 downtime. That is the better answer if the freeze window ever becomes a
 problem — but at 11 seconds, it currently is not.
+
+---
+
+## Off-site copies
+
+| Copy | Where | When |
+|---|---|---|
+| Whole Borg repository (encrypted, so the remote holds only ciphertext) | Google Drive via rclone at the end of `backup.sh` (set `RCLONE_DEST`; root uses its own rclone config) | nightly, after the archive (`Offsite sync complete.` in the backup log) |
+| Veeam restore points | RAID array on another machine, Veeam Backup Copy job | after each backup |
+
+Drive keeps files that `rclone sync` removes in its trash for 30 days. A second
+machine in the same house is off-machine but not off-site; Drive is the only
+off-site copy. Keep the Borg key export and passphrase somewhere other than
+this machine, or the Drive copy cannot be read.
 
 ---
 

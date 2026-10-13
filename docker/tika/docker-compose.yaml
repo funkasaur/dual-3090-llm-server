@@ -2,7 +2,8 @@
 
 services:
   tika:
-    image: apache/tika:latest-full
+    # Pinned 2026-10-05: latest-full went 3 -> 4 silently on 2026-09-03 and broke Open WebUI uploads.
+    image: apache/tika:4.0.0-full@sha256:80072bb73dd320a9de9709beb0b16d14dd6d2680376f8d31e498f55b633ba593
     container_name: tika
     cpuset: "8-15,24-31"        # CCD1
     restart: unless-stopped

@@ -46,6 +46,13 @@ on `ConditionPathExistsGlob=/dev/nvidia[0-9]*`, and — the part that actually
 matters — making the script *wait* for the interrupts to appear rather than
 assuming they are already there.
 
+**Update 2026-10-07:** the `ConditionPathExistsGlob=/dev/nvidia[0-9]*` gate was itself a boot race. It was
+checked at 11:13:10, `/dev/nvidia0` appeared at 11:13:11, so `nvidia-power-limit` (boot-only) and `optimize-ai`
+were *skipped* and the 270 W cap never applied. The gate is gone from both units; the scripts already wait
+for the driver. **Not yet proven at a boot (as of 2026-10-13):** the machine has not rebooted since the change.
+Proof is the next boot: `systemctl show nvidia-power-limit -p ConditionResult -p Result` says `yes`/`success`
+and `nvidia-smi -q -d POWER` shows the cap without a manual step.
+
 There is a second-order problem: IRQ affinity is not sticky. Reloading the
 NVIDIA module resets it, with no failed unit and no log line. `optimize-ai.timer`
 now re-asserts the pinning hourly; the script is idempotent.
@@ -569,6 +576,10 @@ specifically. Nothing here helps against losing the machine. This is a solid
 local restore tier and not an off-site copy, which is the one thing the setup
 does not have.
 
+> **Update 2026-09-29:** off-machine copies now exist. The Borg repository is
+> synced nightly to Google Drive, and a Veeam Backup Copy job sends restore
+> points to a RAID array on another machine. See [backups.md](backups.md#off-site-copies).
+
 ---
 
 ## 10. The freeze/thaw scripts could strand the stack
@@ -792,9 +803,9 @@ stay inside OpenMP.
 | 6 | Stale duplicate scripts | Low | Excluded; delete from host |
 | 7 | Documentation drift | Low | Corrected |
 | 8 | Anonymous Grafana; SNMP community string; unauthenticated Qdrant | Low | Documented |
-| 9 | Veeam stalled: repository out of space for synthetic fulls | High | **Root cause found — needs capacity** |
-| 10 | Freeze/thaw could strand the stack; unsafe stop order and timeout | Medium | Fixed |
-| 11 | Qdrant snapshots stranded in container — vector DB absent from backups | High | Fixed (needs volume mount + cleanup) |
+| 9 | Veeam stalled: repository out of space for synthetic fulls | High | Fixed: Veeam Linux repository since 2026-09-29, job succeeding, alerted on |
+| 10 | Freeze/thaw could strand the stack; unsafe stop order and timeout | Medium | Fixed in `veeam/`; the job's script path on the VBR server was wrong until 2026-10-04; verified by a 2026-10-11 run (see [backups.md](backups.md#freezing-the-stack-around-the-snapshot)) |
+| 11 | Qdrant snapshots stranded in container — vector DB absent from backups | High | Fixed: `qdrant_snapshots` mounted, pruned by `backup.sh` |
 | 12 | OpenMP env pinned the whole inference server to core 0 | Medium | Fixed |
 
 The pattern worth taking away: **nine of these twelve were invisible.** The
