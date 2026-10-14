@@ -10,7 +10,7 @@ and how much power the whole thing is allowed to pull before the UPS gives up.
 This repository documents that layer, with the working configuration and the
 measurements behind it.
 
-It also documents what **didn't** work. The optimisations here were audited
+It also documents what **didn't** work. The optimizations here were audited
 against the running machine before publication, and several of them turned out
 to be inactive, misconfigured, or aimed at the wrong target.
 [`docs/AUDIT.md`](docs/AUDIT.md) is the honest version, and it is probably the
@@ -27,6 +27,7 @@ most useful file here.
 | [`docs/irq-pinning.md`](docs/irq-pinning.md) | Interrupt isolation — including why the obvious target is the wrong one |
 | [`docs/inference.md`](docs/inference.md) | llama-swap + llamAmpere / ik_llama, NVLink, measured throughput by context |
 | [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / DCGM / SNMP |
+| [`docs/kalshi-research.md`](docs/kalshi-research.md) | **Project: an LLM agent researching Kalshi prediction markets (paper only), and what it learned** |
 | [`docs/backups.md`](docs/backups.md) | Borg file-level + Veeam image-level, with off-machine copies (Google Drive, a second machine's RAID) |
 | [`docs/rag-embeddings.md`](docs/rag-embeddings.md) | Moving Open WebUI RAG to EmbeddingGemma: migration, rollback, and why the reranker went ([test](docs/reranker-test/README.md)) |
 | [`docs/veeam-linux-repository.md`](docs/veeam-linux-repository.md) | Using the Linux box as a Veeam repository, and why the SMB workaround costs you |
@@ -34,7 +35,7 @@ most useful file here.
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
 | [`llamampere/`](llamampere/README.md) | Pinned llamAmpere build + local patches for the main model |
 | [`systemd/`](systemd/) | Units for the above |
-| [`docker/`](docker/) | Compose files for the whole stack, secrets parameterised |
+| [`docker/`](docker/) | Compose files for the whole stack, secrets parameterized |
 | [`veeam/`](veeam/) | Guest pre-freeze / post-thaw scripts (patched) |
 | [`grafana/`](grafana/) | Exported alert rules — Grafana owns alerting here |
 
@@ -99,7 +100,7 @@ docker inspect -f '{{.Name}} {{.HostConfig.CpusetCpus}}' $(docker ps -q)
 > **The SMT trap.** On this CPU the sibling of core *N* is thread *N+16*, not
 > *N+1*. `cpuset: "0-4"` gives you five *logical* CPUs — one thread on each of
 > five physical cores, with the siblings (16-20) left to the host. All ten are
-> `"0-4,16-20"`. This repo once mislabelled `"0-4"` as the latter; see
+> `"0-4,16-20"`. This repo once mislabeled `"0-4"` as the latter; see
 > [AUDIT #2](docs/AUDIT.md). The engine now runs on `"0-4"` by choice: with the
 > model fully on the GPUs, generation keeps exactly one core busy.
 
@@ -135,7 +136,7 @@ See [`docs/inference.md`](docs/inference.md) for the full configuration.
 
 ## Service stack
 
-All of it is in [`docker/`](docker/), secrets parameterised, one directory per unit.
+All of it is in [`docker/`](docker/), secrets parameterized, one directory per unit.
 
 - **Frontend** — Open WebUI (CCD0, next to the engine)
 - **Data** — PostgreSQL (chat history), Qdrant (vectors)
