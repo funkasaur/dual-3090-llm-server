@@ -20,14 +20,14 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `CcdTemperatureHigh` | > 85 |
 | warning | `CcdTemperatureImbalance` | > 25 |
 | warning | `CpuDieTemperatureHigh` | > 85 |
-| warning | `GpuCoreTemperatureWarning` | > 80 |
-| critical | `GpuCoreTemperatureCritical` | > 0 |
+| warning | `GpuCoreTemperatureWarning` | > 80 for 2 min |
+| critical | `GpuCoreTemperatureCritical` | core > 84 for 1 min |
 | critical | `GpuExporterDown` | > 0 |
-| warning | `GpuJunctionTemperatureHigh` | > 0 |
+| warning | `GpuJunctionTemperatureHigh` | junction > 88 for 1 min |
 | warning | `GpuPowerCapNotApplied` | > 0 |
-| warning | `GpuTempCollectorStale` | > 0 |
+| warning | `GpuTempCollectorStale` | GPU temps > 30 s old for 1 min (sampled every 2 s) |
 | warning | `GpuVramExhausted` | > 0 |
-| warning | `GpuVramTemperatureHigh` | > 0 |
+| warning | `GpuVramTemperatureHigh` | VRAM > 92 for 1 min |
 | critical | `GpuXidErrors` | > 0 |
 | critical | `InferenceEngineDown` | > 0 |
 | warning | `NodeExporterDown` | > 0 |
@@ -36,7 +36,7 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | critical | `UpsOnBattery` | > 0 |
 | critical | `UpsRuntimeLow` | > 0 |
 | warning | `HostMemoryHigh` | > 85 |
-| critical | `InferenceEngineWedged` | probe failed or watchdog unloaded the model ([llm-watchdog](../scripts/llm-watchdog.sh)) |
+| critical | `InferenceEngineWedged` | probe failing for 2 min, or watchdog unloaded the model ([llm-watchdog](../scripts/llm-watchdog.sh)) |
 | warning | `LlmWatchdogStale` | watchdog silent > 5 min |
 | warning | `NewCircuitLoadHigh` | Server + Desktop + Office 5-min average > 12.5 A for 10 min |
 | critical | `NewCircuitOverload` | same three > 14.5 A for 2 min |
@@ -44,6 +44,19 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `MainsVoltageLow` | a circuit's plugs average < 110 V for 5 min (ANSI C84.1 range B) |
 | warning | `MainsVoltageHigh` | a circuit's plugs average > 127 V for 5 min |
 | warning | `DailyEnergyHigh` | last 24 h > 140% of the previous week's daily average (repeats once a day) |
+| critical | `PrometheusUnreachable` | Prometheus itself down or erroring for 2 min: the one outage alert (every other Prometheus rule treats Error / NoData as OK) |
+| warning | `HostDiskSpaceLow` | a real filesystem > 85% used for 15 min |
+| critical | `HostDiskSpaceCritical` | > 95% used for 5 min |
+| warning | `HostDiskFillingFast` | > 70% used and the 6 h trend reaches 0 free within 24 h (30 min) |
+| critical | `NvmeSmartCritical` | smartctl critical_warning > 0 or SMART status failed (smartctl-exporter) |
+| warning | `NvmeMediaErrors` | media errors rose in the last day |
+| warning | `NvmeWearHigh` | percentage_used > 80, or available spare within 10 of its threshold (1 h) |
+| warning | `NvmeTemperatureHigh` | NVMe composite > 70 C for 10 min |
+| warning | `SmartctlExporterDown` | job smartctl not scraped for 15 min |
+
+`InferenceEngineWedged` waits 2 min: once, a single probe got a 502 `proxy error: EOF` from llama-swap (a
+keep-alive connection closed as a request finished) and alerted although the model kept serving. A real wedge
+fails two probes, the watchdog unloads, and the unload branch fires at once.
 
 Telegram messages use `telegram-readable.tmpl` (contact point message
 `{{ template "tg.message" . }}`, parse mode HTML): severity, name, description,

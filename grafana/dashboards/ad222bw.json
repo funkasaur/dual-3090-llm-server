@@ -12,6 +12,102 @@
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "name": "Deploys / restarts",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "container"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "name": "Container crashes",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "crash"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "green",
+        "name": "Borg backups",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "backup"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "llamaswap_active_model_info unless llamaswap_active_model_info offset 2m",
+        "iconColor": "orange",
+        "name": "Model swaps",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Model loaded: {{model}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "label_replace(label_replace(upsBaseOutputStatus == 3, \"ups\", \"LLM server\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop\", \"instance\", \"192.0.2.62\")",
+        "iconColor": "red",
+        "name": "UPS on battery",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "UPS on battery: {{ups}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "(veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} != veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} offset 10m) * 1000",
+        "iconColor": "green",
+        "name": "Veeam jobs",
+        "step": "10m",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Veeam: {{veeam_job}} finished",
+        "useValueForTime": true
       }
     ]
   },

@@ -1,4 +1,104 @@
 {
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "name": "Deploys / restarts",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "container"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "name": "Container crashes",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "crash"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "green",
+        "name": "Borg backups",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "backup"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "llamaswap_active_model_info unless llamaswap_active_model_info offset 2m",
+        "iconColor": "orange",
+        "name": "Model swaps",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Model loaded: {{model}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "label_replace(label_replace(upsBaseOutputStatus == 3, \"ups\", \"LLM server\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop\", \"instance\", \"192.0.2.62\")",
+        "iconColor": "red",
+        "name": "UPS on battery",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "UPS on battery: {{ups}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "(veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} != veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} offset 10m) * 1000",
+        "iconColor": "green",
+        "name": "Veeam jobs",
+        "step": "10m",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Veeam: {{veeam_job}} finished",
+        "useValueForTime": true
+      }
+    ]
+  },
   "panels": [
     {
       "datasource": {
@@ -66,7 +166,7 @@
             "uid": "efnh5gcimbv28f"
           },
           "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp3\"}",
-          "legendFormat": "CCD0 \u2014 inference (Tccd1)",
+          "legendFormat": "CCD0 — inference (Tccd1)",
           "range": true,
           "refId": "A"
         },
@@ -76,7 +176,7 @@
             "uid": "efnh5gcimbv28f"
           },
           "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp4\"}",
-          "legendFormat": "CCD1 \u2014 RAG/db (Tccd2)",
+          "legendFormat": "CCD1 — RAG/db (Tccd2)",
           "range": true,
           "refId": "B"
         },
@@ -91,7 +191,7 @@
           "refId": "C"
         }
       ],
-      "title": "CPU \u2014 per-CCD temperature",
+      "title": "CPU — per-CCD temperature",
       "type": "timeseries"
     },
     {
@@ -140,7 +240,7 @@
             "uid": "efnh5gcimbv28f"
           },
           "expr": "avg(100 - rate(node_cpu_seconds_total{mode=\"idle\",cpu=~\"0|1|2|3|4|5|6|7|16|17|18|19|20|21|22|23\"}[5m])*100)",
-          "legendFormat": "CCD0 \u2014 inference",
+          "legendFormat": "CCD0 — inference",
           "range": true,
           "refId": "A"
         },
@@ -150,12 +250,12 @@
             "uid": "efnh5gcimbv28f"
           },
           "expr": "avg(100 - rate(node_cpu_seconds_total{mode=\"idle\",cpu=~\"8|9|10|11|12|13|14|15|24|25|26|27|28|29|30|31\"}[5m])*100)",
-          "legendFormat": "CCD1 \u2014 RAG/db",
+          "legendFormat": "CCD1 — RAG/db",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "CPU \u2014 per-CCD utilisation",
+      "title": "CPU — per-CCD utilisation",
       "type": "timeseries"
     },
     {
@@ -163,7 +263,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Junction and VRAM come from gpu-vram-temps.timer, not dcgm-exporter, which does not expose those fields. GDDR6X throttles at 110C and runs far hotter than the core \u2014 this is the number that predicts 3090 degradation.",
+      "description": "Junction and VRAM come from gpu-vram-temps.timer, not dcgm-exporter, which does not expose those fields. GDDR6X throttles at 110C and runs far hotter than the core — this is the number that predicts 3090 degradation.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -249,7 +349,7 @@
           "refId": "C"
         }
       ],
-      "title": "GPU \u2014 core / junction / VRAM",
+      "title": "GPU — core / junction / VRAM",
       "type": "timeseries"
     },
     {
@@ -319,7 +419,7 @@
           "refId": "A"
         }
       ],
-      "title": "GPU \u2014 power draw vs 270W cap",
+      "title": "GPU — power draw vs 270W cap",
       "type": "timeseries"
     }
   ],

@@ -13,6 +13,102 @@
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "name": "Deploys / restarts",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "container"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "name": "Container crashes",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "crash"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "green",
+        "name": "Borg backups",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "backup"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "llamaswap_active_model_info unless llamaswap_active_model_info offset 2m",
+        "iconColor": "orange",
+        "name": "Model swaps",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Model loaded: {{model}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "label_replace(label_replace(upsBaseOutputStatus == 3, \"ups\", \"LLM server\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop\", \"instance\", \"192.0.2.62\")",
+        "iconColor": "red",
+        "name": "UPS on battery",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "UPS on battery: {{ups}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "(veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} != veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} offset 10m) * 1000",
+        "iconColor": "green",
+        "name": "Veeam jobs",
+        "step": "10m",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Veeam: {{veeam_job}} finished",
+        "useValueForTime": true
       }
     ]
   },
@@ -20,6 +116,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 2023740107800576,
   "liveNow": false,
   "panels": [
     {
@@ -472,6 +569,786 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
+      "description": "Hotspot temperature from gpu-vram-temps (gputemps); nvidia-smi does not show it. Red = alert threshold (88 C).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 110,
+          "min": 30,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 88
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 8
+      },
+      "id": 24,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": true
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": true,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.0.1+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_junction_temp_celsius{gpu=\"0\"}",
+          "legendFormat": "GPU 0 Junction",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU 0 Junction",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efnh5gcimbv28f"
+      },
+      "description": "GDDR6X memory (incl. back-side chips) temperature from gpu-vram-temps (gputemps); nvidia-smi does not show it. Red = alert threshold (92 C).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 110,
+          "min": 30,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 88
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 8
+      },
+      "id": 25,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": true
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": true,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.0.1+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_vram_temp_celsius{gpu=\"0\"}",
+          "legendFormat": "GPU 0 VRAM",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU 0 VRAM",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efnh5gcimbv28f"
+      },
+      "description": "Hotspot temperature from gpu-vram-temps (gputemps); nvidia-smi does not show it. Red = alert threshold (88 C).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 110,
+          "min": 30,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 88
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 8
+      },
+      "id": 26,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": true
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": true,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.0.1+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_junction_temp_celsius{gpu=\"1\"}",
+          "legendFormat": "GPU 1 Junction",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU 1 Junction",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efnh5gcimbv28f"
+      },
+      "description": "GDDR6X memory (incl. back-side chips) temperature from gpu-vram-temps (gputemps); nvidia-smi does not show it. Red = alert threshold (92 C).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 110,
+          "min": 30,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 88
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 8
+      },
+      "id": 27,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": true
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": true,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.0.1+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_vram_temp_celsius{gpu=\"1\"}",
+          "legendFormat": "GPU 1 VRAM",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU 1 VRAM",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efnh5gcimbv28f"
+      },
+      "description": "Fan % (left) against VRAM and junction temperature (right). 'curve target' is what gpu-fan-curve set; a gap in it means the driver is in control (idle / cool).",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 0,
+            "lineWidth": 1
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*°C"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "min",
+                "value": 30
+              },
+              {
+                "id": "max",
+                "value": 110
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "VRAM °C"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "junction °C"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fan %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "curve target %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    6,
+                    4
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "power W"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 300
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "text",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dot"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 28,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "llamaswap_gpu_fan_speed_percent{uuid=\"GPU-882bbe38-2291-3fc8-e53b-f66c7cf8b124\"}",
+          "legendFormat": "fan %",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_fan_curve_target_percent{gpu=\"0\"} >= 0",
+          "legendFormat": "curve target %",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_vram_temp_celsius{gpu=\"0\"}",
+          "legendFormat": "VRAM °C",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_junction_temp_celsius{gpu=\"0\"}",
+          "legendFormat": "junction °C",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "DCGM_FI_DEV_POWER_USAGE{gpu=\"0\"}",
+          "legendFormat": "power W",
+          "refId": "E"
+        }
+      ],
+      "title": "GPU 0: fan vs VRAM",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efnh5gcimbv28f"
+      },
+      "description": "Fan % (left) against VRAM and junction temperature (right). 'curve target' is what gpu-fan-curve set; a gap in it means the driver is in control (idle / cool).",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 0,
+            "lineWidth": 1
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*°C"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "min",
+                "value": 30
+              },
+              {
+                "id": "max",
+                "value": 110
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "VRAM °C"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "junction °C"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fan %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "curve target %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    6,
+                    4
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "power W"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 300
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "text",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dot"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 29,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "llamaswap_gpu_fan_speed_percent{uuid=\"GPU-c85a79ea-ee4e-1709-02ab-2686e69ebc39\"}",
+          "legendFormat": "fan %",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_fan_curve_target_percent{gpu=\"1\"} >= 0",
+          "legendFormat": "curve target %",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_vram_temp_celsius{gpu=\"1\"}",
+          "legendFormat": "VRAM °C",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "gpu_junction_temp_celsius{gpu=\"1\"}",
+          "legendFormat": "junction °C",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efnh5gcimbv28f"
+          },
+          "expr": "DCGM_FI_DEV_POWER_USAGE{gpu=\"1\"}",
+          "legendFormat": "power W",
+          "refId": "E"
+        }
+      ],
+      "title": "GPU 1: fan vs VRAM",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efnh5gcimbv28f"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -531,7 +1408,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 22
       },
       "id": 18,
       "options": {
@@ -640,7 +1517,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 22
       },
       "id": 10,
       "options": {
@@ -751,7 +1628,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 30
       },
       "id": 6,
       "options": {
@@ -862,7 +1739,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 30
       },
       "id": 19,
       "options": {
@@ -971,7 +1848,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 38
       },
       "id": 12,
       "options": {
@@ -1087,7 +1964,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 38
       },
       "id": 4,
       "options": {
@@ -1214,7 +2091,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 46
       },
       "id": 2,
       "options": {
@@ -1360,5 +2237,6 @@
   },
   "timezone": "browser",
   "title": "Better NVIDIA DCGM Dashboard",
-  "uid": "nvidia-dcgm-dashboard"
+  "uid": "nvidia-dcgm-dashboard",
+  "version": 12
 }

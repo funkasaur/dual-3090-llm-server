@@ -1,0 +1,12 @@
+[Unit]
+Description=GPU fan curve from VRAM/junction temperature (scripts/gpu-fan-curve.py); fans back to driver auto on stop
+After=nvidia-power-limit.service gpu-vram-temps.timer
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/gpu-fan-curve.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

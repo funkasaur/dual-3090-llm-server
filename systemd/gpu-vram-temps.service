@@ -4,8 +4,9 @@
 #
 # This genuinely requires root: gputemps mmaps /dev/mem to read the card's PCI
 # BAR (needs CAP_SYS_RAWIO) and additionally refuses to start unless
-# geteuid()==0, so file capabilities alone will not do. Since it runs every 30
-# seconds, it is confined as tightly as that access allows.
+# geteuid()==0, so file capabilities alone will not do. Since it runs every 2
+# seconds (gpu-fan-curve reacts to it; was 30 s until 2026-10-01), it is confined as
+# tightly as that access allows.
 
 [Unit]
 Description=Export GPU junction/VRAM temperatures for Prometheus
@@ -45,3 +46,9 @@ LockPersonality=yes
 # Sampling is cheap, but keep it off the inference cores regardless.
 CPUAffinity=8-15 24-31
 Nice=10
+
+# Every 2 s = ~43,000 runs/day; without this each run logs 3 info lines
+# (Starting / Deactivated / Finished) to the system journal. Errors still log.
+LogLevelMax=notice
+# A hung gputemps must not hold the timer: the next sample is due in 2 s.
+TimeoutStartSec=10s

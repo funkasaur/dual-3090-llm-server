@@ -1,12 +1,14 @@
 [Unit]
-Description=Sample GPU junction/VRAM temperatures every 30s
+Description=Sample GPU junction/VRAM temperatures every 2s
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=30s
+OnUnitActiveSec=2s
 # Thermal data is only useful fresh; do not replay missed runs after downtime.
 Persistent=false
-AccuracySec=5s
+# 500ms, not the 5s used at 30s sampling: a 5s window would let systemd delay a 2s run
+# by up to 5s. gpu-fan-curve reacts to these readings.
+AccuracySec=500ms
 
 [Install]
 WantedBy=timers.target

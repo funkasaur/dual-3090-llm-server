@@ -222,20 +222,29 @@ panels.append(panel("bargauge", "Inside each meter (average power, selected rang
                      "properties": [{"id": "displayName", "value": f"{par} › {label}"}]}
                     for plug, label in CHILD.items() for par in PARENTS if TOPO.get(plug, {}).get("parent") == par])))
 
-# ---- UPS (CyberPower RMCARD over SNMP, job cyberpower_ups) ------------------------------
-def ups(expr):   # name the two UPSes after what they power
-    return (f'label_replace(label_replace({expr}, "ups", "LLM Server UPS", "instance", "192.0.2.114"),'
-            f' "ups", "Desktop UPS", "instance", "192.0.2.62")')
-UPS_Y = 56
+# ---- UPS (CyberPower over SNMP, job cyberpower_ups) -------------------------------------
+# All three have RMCARDs. The Server UPS got its RMCARD205 at 192.0.2.59 on 2026-10-12; before that it was
+# PowerPanel Business's SNMP agent on another machine (192.0.2.223, no upsAdvanceOutputPower, so watts = load % x
+# rated watts, 12 W steps). The regex keeps that history under the same name.
+UPS_NAMES = [("192.0.2.114", "LLM Server UPS", "Office"), ("192.0.2.62", "Desktop UPS", "Desktop"),
+             ("192.0.2.(223|59)", "Server UPS", "Server")]   # Server UPS: network rack and other servers
+def ups(expr):   # name the UPSes after what they power; max by (ups) joins Server's .223 history and .59 into one line
+    for ip, name, _ in UPS_NAMES:
+        expr = f'label_replace({expr}, "ups", "{name}", "instance", "{ip}")'
+    return f"max by (ups) ({expr})"
+UPS_COLOURS = [{"matcher": {"id": "byName", "options": name}, "properties": [{"id": "color", "value": fixed(dict(METERS)[meter])}]}
+               for _, name, meter in UPS_NAMES]
+UPS_W = "upsAdvanceOutputPower or (upsAdvanceOutputLoad * on(instance, job) upsAdvanceIdentLoadPower / 100)"
+UPS_Y, UPS_SH = 56, 7
 def ups_stat(title, x, expr, unit, desc, **fc):
-    return panel("stat", title, x, UPS_Y, 6, 5, [dict(expr=ups(expr), instant=True, legendFormat="{{ups}}")],
+    return panel("stat", title, x, UPS_Y, 6, UPS_SH, [dict(expr=ups(expr), instant=True, legendFormat="{{ups}}")],
                  description=desc,
                  options=dict(colorMode="background", graphMode="none", textMode="value_and_name", justifyMode="center",
                               orientation="vertical", text=dict(titleSize=12, valueSize=22),
                               reduceOptions=dict(calcs=["lastNotNull"], fields="", values=False)),
                  fieldConfig=dict(defaults=dict(unit=unit, **fc), overrides=[]))
 panels.append(ups_stat("UPS status", 0, "upsBaseOutputStatus", "none",
-    "Output status from the UPS network card. Anything but Online means the UPS is not passing mains through.",
+    "Output status from each UPS's RMCARD205 network card. Anything but Online means the UPS is not passing mains through.",
     mappings=[{"type": "value", "options": {"2": {"text": "Online", "color": GOOD}, "3": {"text": "ON BATTERY", "color": CRIT_S},
                "4": {"text": "Boost", "color": WARN_S}, "10": {"text": "Buck", "color": WARN_S}, "11": {"text": "OVERLOAD", "color": CRIT_S},
                "6": {"text": "Off", "color": CRIT_S}}}], color={"mode": "thresholds"}, thresholds=thresholds((None, WARN_S))))
@@ -249,24 +258,22 @@ panels.append(ups_stat("UPS battery health", 18, "upsAdvanceBatteryReplaceIndica
     "The UPS's self-test verdict on the battery.",
     mappings=[{"type": "value", "options": {"1": {"text": "OK", "color": GOOD}, "2": {"text": "REPLACE", "color": CRIT_S}}}],
     color={"mode": "thresholds"}, thresholds=thresholds((None, WARN_S))))
-panels.append(panel("timeseries", "UPS output power", 0, UPS_Y + 5, 12, 8,
-    [dict(expr=ups("upsAdvanceOutputPower"), legendFormat="{{ups}}")],
-    description="Watts leaving each UPS. LLM Server UPS sits on the Office plug; Desktop UPS on the Desktop plug.",
-    fieldConfig=dict(defaults=dict(unit="watt", min=0, custom=dict(fillOpacity=10, lineWidth=2)), overrides=[
-        {"matcher": {"id": "byName", "options": "LLM Server UPS"}, "properties": [{"id": "color", "value": fixed(dict(METERS)["Office"])}]},
-        {"matcher": {"id": "byName", "options": "Desktop UPS"}, "properties": [{"id": "color", "value": fixed(dict(METERS)["Desktop"])}]}]),
+panels.append(panel("timeseries", "UPS output power", 0, UPS_Y + UPS_SH, 12, 8,
+    [dict(expr=ups(UPS_W), legendFormat="{{ups}}")],
+    description="Watts leaving each UPS. LLM Server UPS sits on the Office plug; Desktop UPS on the Desktop plug; "
+                "Server UPS on the Server plug. All three report measured watts from their network cards (Server UPS "
+                "since Oct 12 2026; before that its watts were load % x 1200 W, in 12 W steps).",
+    fieldConfig=dict(defaults=dict(unit="watt", min=0, custom=dict(fillOpacity=10, lineWidth=2)), overrides=UPS_COLOURS),
     options=dict(legend=dict(displayMode="list", placement="bottom"), tooltip=dict(mode="multi"))))
-panels.append(panel("timeseries", "UPS input voltage", 12, UPS_Y + 5, 12, 8,
+panels.append(panel("timeseries", "UPS input voltage", 12, UPS_Y + UPS_SH, 12, 8,
     [dict(expr=ups("upsAdvanceInputLineVoltage / 10"), legendFormat="{{ups}}")],
     description="Mains voltage as each UPS sees it. The dashed lines are the 110 V / 127 V alert limits.",
     fieldConfig=dict(defaults=dict(unit="volt", decimals=1, custom=dict(lineWidth=2, thresholdsStyle=dict(mode="dashed")),
-                                   thresholds=thresholds((None, "transparent"), (110, WARN), (127, CRIT))), overrides=[
-        {"matcher": {"id": "byName", "options": "LLM Server UPS"}, "properties": [{"id": "color", "value": fixed(dict(METERS)["Office"])}]},
-        {"matcher": {"id": "byName", "options": "Desktop UPS"}, "properties": [{"id": "color", "value": fixed(dict(METERS)["Desktop"])}]}]),
+                                   thresholds=thresholds((None, "transparent"), (110, WARN), (127, CRIT))), overrides=UPS_COLOURS),
     options=dict(legend=dict(displayMode="list", placement="bottom"), tooltip=dict(mode="multi"))))
 
 # ---- LLM server power cost ----------------------------------------------------------------------
-LLM_Y = UPS_Y + 13
+LLM_Y = UPS_Y + UPS_SH + 8
 LLMW = f'sum({src(chr(123) + "name=" + chr(34) + "LLM Server" + chr(34) + chr(125))})'
 GPUW = "sum(DCGM_FI_DEV_POWER_USAGE)"
 LLM_KWH = f"(sum_over_time({LLMW}[$__range:1m]) * 60 / 3.6e6)"
@@ -328,6 +335,6 @@ panels.append({"id": 99, "type": "row", "title": "Plug details", "collapsed": Tr
 dash = dict(uid="smartlife-power", title="Home power", tags=["smartlife", "power"], timezone="browser",
             refresh="1m", time={"from": "now-24h", "to": "now"}, schemaVersion=39, graphTooltip=1,
             panels=panels, templating=dict(list=[dict(type="textbox", name="rate", label="Rate ($/kWh)",
-                                                      query="0.15", current=dict(text="0.15", value="0.15"))]))
+                                                      query="0.24", current=dict(text="0.24", value="0.24"))]))
 json.dump(dash, open("grafana-dashboard.json", "w"), indent=1)
 print(len(panels), "panels")

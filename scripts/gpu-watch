@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""gpu-watch: live per-GPU VRAM / junction / core temperature, fan and power. No sudo needed.
+
+  gpu-watch          redraw every second until Ctrl-C
+  gpu-watch --once   one plain snapshot (works from Claude Code's `!` prefix)
+
+Temperatures come from gpu-vram-temps.sh's textfile (root writes it every 2 s; it is world-readable);
+fan %, RPM and power are read from NVML directly (reading needs no root, only setting does); "curve" is
+what gpu-fan-curve chose ("driver" = the driver's own automatic control). Colours match the dashboard
+gauges and alert thresholds: VRAM orange 88 / red 92, junction orange 85 / red 88.
+"""
+import ctypes as C
+import os
+import re
+import sys
+import time
+
+DIR = "/var/lib/node_exporter/textfile_collector"
+TEMPS, CURVE = f"{DIR}/gpu_vram_temps.prom", f"{DIR}/gpu_fan_curve.prom"
+STALE_S = 15
+LIMITS = {"vram": (88, 92), "junction": (85, 88)}
+ORANGE, RED, DIM, RESET = "\033[33m", "\033[31;1m", "\033[2m", "\033[0m"
+
+nvml = C.CDLL("libnvidia-ml.so.1")
+
+
+class _Rpm(C.Structure):
+    _fields_ = [("version", C.c_uint), ("fan", C.c_uint), ("speed", C.c_uint)]
+
+
+def read_prom(path):
+    """{(metric, gpu): value}, file mtime -- or ({}, None) if unreadable."""
+    try:
+        text, mtime = open(path).read(), os.path.getmtime(path)
+    except OSError:
+        return {}, None
+    return {(m[1], m[2]): float(m[3]) for m in
+            re.finditer(r'^(\w+)\{gpu="(\d+)"\} (\S+)$', text, re.M)}, mtime
+
+
+def gpu_info(i):
+    h = C.c_void_p()
+    if nvml.nvmlDeviceGetHandleByIndex_v2(i, C.byref(h)) != 0:
+        return None
+    pct, mw, nfans = C.c_uint(), C.c_uint(), C.c_uint()
+    nvml.nvmlDeviceGetNumFans(h, C.byref(nfans))
+    rpms = []
+    for f in range(nfans.value):
+        r = _Rpm(version=C.sizeof(_Rpm) | (1 << 24), fan=f)
+        rpms.append(str(r.speed) if nvml.nvmlDeviceGetFanSpeedRPM(h, C.byref(r)) == 0 else "?")
+    fan = pct.value if nvml.nvmlDeviceGetFanSpeed_v2(h, 0, C.byref(pct)) == 0 else None
+    watts = mw.value / 1000 if nvml.nvmlDeviceGetPowerUsage(h, C.byref(mw)) == 0 else None
+    return fan, "/".join(rpms), watts
+
+
+def temp(v, kind, colour):
+    s = f"{v:.0f}°C" if v is not None else "  ?"
+    if not colour or v is None or kind not in LIMITS:
+        return s
+    warn, crit = LIMITS[kind]
+    return (RED if v >= crit else ORANGE if v >= warn else "") + s + RESET
+
+
+def render(colour):
+    temps, t_mtime = read_prom(TEMPS)
+    curve, _ = read_prom(CURVE)
+    n = C.c_uint()
+    nvml.nvmlDeviceGetCount_v2(C.byref(n))
+    age = time.time() - t_mtime if t_mtime else None
+    age_s = "temps: no file" if age is None else f"temps {age:.1f}s old"
+    if age is not None and age > STALE_S:
+        age_s = (RED if colour else "") + f"temps STALE ({age:.0f}s)" + (RESET if colour else "")
+    out = [f"{time.strftime('%H:%M:%S')}  {age_s}",
+           f"{'':6} {'VRAM':>6} {'junction':>9} {'core':>6} {'fan':>5} {'rpm':>11} {'power':>7}  curve"]
+    for i in range(n.value):
+        g = str(i)
+        fan, rpm, watts = gpu_info(i) or (None, "?", None)
+        c = curve.get(("gpu_fan_curve_target_percent", g))
+        cs = "driver" if c is None or c < 0 else f"{c:.0f}%"
+        # pad the coloured cells by their visible width, not their byte length
+        cells = [(temp(temps.get(("gpu_vram_temp_celsius", g)), "vram", colour), 6),
+                 (temp(temps.get(("gpu_junction_temp_celsius", g)), "junction", colour), 9),
+                 (temp(temps.get(("gpu_core_temp_celsius", g)), "core", colour), 6)]
+        row = f"GPU {g:2}"
+        for s, w in cells:
+            row += " " + " " * max(0, w - len(re.sub(r"\033\[[\d;]*m", "", s))) + s
+        row += f" {f'{fan}%' if fan is not None else '?':>5} {rpm:>11} {f'{watts:.0f} W' if watts is not None else '?':>7}  {cs}"
+        out.append(row)
+    return "\n".join(out)
+
+
+def main():
+    if nvml.nvmlInit_v2() != 0:
+        sys.exit("NVML init failed (is the NVIDIA driver loaded?)")
+    if "--once" in sys.argv or not sys.stdout.isatty():
+        print(render(colour=False))
+        return
+    try:
+        while True:
+            sys.stdout.write("\033[H\033[2J" + render(colour=True) + f"\n{DIM}Ctrl-C to quit{RESET}\n")
+            sys.stdout.flush()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print()
+
+
+if __name__ == "__main__":
+    main()

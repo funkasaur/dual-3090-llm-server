@@ -14,8 +14,13 @@ sudo systemctl daemon-reload
 | `set-gpu-power.sh` | `nvidia-power-limit.service` | Persistence mode + per-GPU power cap |
 | `backup.sh` | `borg-backup.service` + `.timer` | Nightly Borg archive with Postgres/Qdrant pre-hooks |
 | `llm-watchdog.sh` | `llm-watchdog.service` + `.timer` | Every 60 s: probe the loaded LLM's `/tokenize`; unload it after two wrong answers (silent-wedge guard, see [inference.md](../docs/inference.md#the-watchdog)) |
+| `gpu-vram-temps.sh` | `gpu-vram-temps.service` + `.timer` | Every 2 s: VRAM / junction / core temperature via `gputemps` into node-exporter's textfile collector |
+| `gpu-fan-curve.py` | `gpu-fan-curve.service` (root) | Fan speed from VRAM / junction / core / power, every 2 s; fans back to the driver on stop (see [monitoring.md](../docs/monitoring.md)). `.py`, so install it by name |
+| `gpu-watch` | — (user) | Live GPU temperature / fan / power table, no sudo |
+| `case-fans-identify.py` | — (run by hand, root) | Map NCT6797 fan channels to physical fans: raise each to 100 % one at a time, then restore it |
+| `gpu-templog.py` | — (run by hand, no sudo) | `gpu-templog.py <seconds> <out.csv>`: 1 s log of GPU VRAM/junction/core, GPU power, CPU, board temps and case fans, for before/after cooling tests |
 
-All three are idempotent and safe to re-run.
+The installed scripts are idempotent and safe to re-run.
 
 ## Before enabling
 

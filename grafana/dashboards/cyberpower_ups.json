@@ -1,4 +1,105 @@
 {
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "name": "Deploys / restarts",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "container"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "name": "Container crashes",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "crash"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "green",
+        "name": "Borg backups",
+        "target": {
+          "limit": 500,
+          "matchAny": true,
+          "tags": [
+            "backup"
+          ],
+          "type": "tags"
+        }
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "llamaswap_active_model_info unless llamaswap_active_model_info offset 2m",
+        "iconColor": "orange",
+        "name": "Model swaps",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Model loaded: {{model}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "label_replace(label_replace(upsBaseOutputStatus == 3, \"ups\", \"LLM server\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop\", \"instance\", \"192.0.2.62\")",
+        "iconColor": "red",
+        "name": "UPS on battery",
+        "step": "60s",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "UPS on battery: {{ups}}",
+        "useValueForTime": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "efnh5gcimbv28f"
+        },
+        "enable": true,
+        "expr": "(veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} != veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} offset 10m) * 1000",
+        "iconColor": "green",
+        "name": "Veeam jobs",
+        "step": "10m",
+        "tagKeys": "",
+        "textFormat": "",
+        "titleFormat": "Veeam: {{veeam_job}} finished",
+        "useValueForTime": true
+      }
+    ]
+  },
+  "id": 661786332934144,
   "panels": [
     {
       "datasource": {
@@ -53,7 +154,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 0,
         "y": 0
@@ -63,6 +164,7 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
+        "orientation": "vertical",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -78,7 +180,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsBaseOutputStatus, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsBaseOutputStatus, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\"))",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -125,7 +227,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 6,
         "y": 0
@@ -135,6 +237,7 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
+        "orientation": "vertical",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -150,7 +253,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsBaseBatteryStatus, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsBaseBatteryStatus, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\"))",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -192,7 +295,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 12,
         "y": 0
@@ -202,6 +305,7 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
+        "orientation": "vertical",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -217,7 +321,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputLoad, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceOutputLoad, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\"))",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -259,7 +363,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 18,
         "y": 0
@@ -269,6 +373,7 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
+        "orientation": "vertical",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -284,7 +389,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 6000",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\") / 6000)",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -299,7 +404,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Real power drawn through the UPS. Reported directly in watts, no scaling needed.",
+      "description": "All three UPSes report measured watts from their RMCARD205 cards. Server UPS before Oct 12 2026 (no card yet): watts were load % x 1200 W, in 12 W steps.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -317,7 +422,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 6
       },
       "id": 5,
       "options": {
@@ -341,7 +446,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputPower, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace((upsAdvanceOutputPower or (upsAdvanceOutputLoad * on(instance, job) upsAdvanceIdentLoadPower / 100)), \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\"))",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -374,7 +479,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 6
       },
       "id": 6,
       "options": {
@@ -398,7 +503,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace((upsAdvanceOutputCurrent * upsAdvanceOutputVoltage) / 100, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace((upsAdvanceOutputCurrent * upsAdvanceOutputVoltage) / 100, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\"))",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -431,7 +536,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 14
       },
       "id": 7,
       "options": {
@@ -455,7 +560,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputCurrent, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceOutputCurrent, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\") / 10)",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -488,7 +593,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 14
       },
       "id": 8,
       "options": {
@@ -512,9 +617,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceInputLineVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceInputLineVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\") / 10)",
           "instant": false,
-          "legendFormat": "{{ups}} \u2014 input",
+          "legendFormat": "{{ups}} — input",
           "range": true,
           "refId": "A"
         },
@@ -523,9 +628,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceOutputVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\") / 10)",
           "instant": false,
-          "legendFormat": "{{ups}} \u2014 output",
+          "legendFormat": "{{ups}} — output",
           "range": true,
           "refId": "B"
         }
@@ -567,10 +672,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 8,
         "x": 0,
-        "y": 20
+        "y": 22
       },
       "id": 9,
       "options": {
@@ -592,7 +697,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\")",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\"))",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -619,10 +724,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 8,
         "x": 8,
-        "y": 20
+        "y": 22
       },
       "id": 10,
       "options": {
@@ -644,7 +749,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceBatteryVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryVoltage, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\") / 10)",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -688,10 +793,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 8,
         "x": 16,
-        "y": 20
+        "y": 22
       },
       "id": 11,
       "options": {
@@ -713,7 +818,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "label_replace(label_replace(upsAdvanceOutputFrequency, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\") / 10",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceOutputFrequency, \"ups\",\"AI Server\",\"instance\",\"192.0.2.114\"), \"ups\",\"Desktop\",\"instance\",\"192.0.2.62\"), \"ups\",\"Server\",\"instance\",\"192.0.2.(223|59)\") / 10)",
           "instant": false,
           "legendFormat": "{{ups}}",
           "range": true,
@@ -736,5 +841,6 @@
   },
   "timezone": "browser",
   "title": "CyberPower UPS Dashboard",
-  "uid": "cyberpower_ups"
+  "uid": "cyberpower_ups",
+  "version": 22
 }

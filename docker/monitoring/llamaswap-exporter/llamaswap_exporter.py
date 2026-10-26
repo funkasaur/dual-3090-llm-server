@@ -1,6 +1,6 @@
 import time
 import requests
-from prometheus_client import start_http_server, Gauge, Info
+from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info
 
 STATS_URL = "http://llama-swap-unified:8080/api/metrics/stats"
 ACTIVITY_URL = "http://llama-swap-unified:8080/api/metrics/activity"
@@ -26,6 +26,58 @@ LEDGER = '/ledger/llamaswap.sqlite'
 ledger_tokens = Gauge('llamaswap_ledger_tokens_total', 'All-time tokens by kind: token-saver history + llama-swap store', ['kind'])
 ledger_requests = Gauge('llamaswap_ledger_requests_total', 'All-time requests: token-saver history + llama-swap store', ['store'])  # labelled: no 0 before the first read
 _offset, _offset_at = None, 0
+
+# Per-request performance (2026-10-12): every activity record once, by id. The activity page holds the
+# newest 25, so more than 25 requests between two 15 s polls would drop the oldest of them.
+DEPTHS = ((8192, '0-8k'), (32768, '8-32k'), (65536, '32-64k'), (131072, '64-128k'))
+decode_tps = Histogram('llamaswap_request_decode_tps', 'Generation tokens/s per request (>= 16 output tokens)',
+                       ['depth'], buckets=(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 150, 200))
+prefill_tps = Histogram('llamaswap_request_prefill_tps', 'Prompt tokens/s per request (>= 256 new prompt tokens)',
+                        buckets=(100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000))
+prefill_s = Histogram('llamaswap_request_prefill_seconds', 'New prompt tokens / prompt speed: approx. time to first token',
+                      buckets=(0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 40, 80, 160))
+duration_s = Histogram('llamaswap_request_duration_seconds', 'Whole request duration',
+                       buckets=(1, 2, 5, 10, 20, 40, 60, 120, 300, 600, 1200))
+context_tok = Histogram('llamaswap_request_context_tokens', 'Context per request: cached + new prompt tokens',
+                        buckets=(1024, 4096, 8192, 16384, 32768, 65536, 98304, 131072, 196608, 262144))
+draft_total = Counter('llamaswap_request_draft_tokens', 'Speculative draft tokens proposed')
+draft_acc = Counter('llamaswap_request_draft_accepted_tokens', 'Speculative draft tokens accepted')
+status_total = Counter('llamaswap_request_status', 'Requests by HTTP status', ['code'])
+_seen_id = None
+for _lab in [lab for _, lab in DEPTHS] + ['128k+']:  # start labelled series at 0 so rate() sees the first request
+    decode_tps.labels(_lab)
+status_total.labels('200')
+
+
+def depth_label(n):
+    return next((lab for lim, lab in DEPTHS if n < lim), '128k+')
+
+
+def observe(records):
+    """Record activity entries newer than the last seen id (none on the first poll)."""
+    global _seen_id
+    ids = [r.get('id', 0) for r in records]
+    if _seen_id is None:
+        _seen_id = max(ids, default=0)
+        return
+    for r in sorted(records, key=lambda x: x.get('id', 0)):
+        if r.get('id', 0) <= _seen_id:
+            continue
+        t = r.get('tokens') or {}
+        new, cached, out = t.get('input_tokens', 0), t.get('cache_tokens', 0), t.get('output_tokens', 0)
+        ctx = new + cached
+        status_total.labels(str(r.get('resp_status_code', 0))).inc()
+        duration_s.observe(r.get('duration_ms', 0) / 1000)
+        context_tok.observe(ctx)
+        if out >= 16 and t.get('tokens_per_second', 0) > 0:
+            decode_tps.labels(depth_label(ctx)).observe(t['tokens_per_second'])
+        if new >= 256 and t.get('prompt_per_second', 0) > 0:
+            prefill_tps.observe(t['prompt_per_second'])
+        if new > 0 and t.get('prompt_per_second', 0) > 0:
+            prefill_s.observe(new / t['prompt_per_second'])
+        draft_total.inc(max(t.get('draft_tokens', 0), 0))
+        draft_acc.inc(max(t.get('draft_acc_tokens', 0), 0))
+    _seen_id = max(_seen_id, max(ids, default=0))
 _last_total = 0
 
 
@@ -67,6 +119,7 @@ def poll():
     try:
         activity = requests.get(ACTIVITY_URL, timeout=5).json()
         records = activity.get('data', [])
+        observe(records)
         if records:
             latest = records[0]
             active_model.info({'model': latest.get('model', 'unknown')})

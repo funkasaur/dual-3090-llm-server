@@ -47,8 +47,9 @@ services:
     container_name: node-exporter
     cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
-    ports:
-      - "9100:9100"
+    # Host network: in a container namespace node-exporter only sees eth0 + lo, so the
+    # network traffic panels were blind. Prometheus scrapes it via the ai-net gateway.
+    network_mode: host
     command:
       - '--path.rootfs=/host'
       # Picks up gpu_vram_temps.prom, written by gpu-vram-temps.timer on the
@@ -60,8 +61,6 @@ services:
       - '/:/host:ro,rslave'
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    networks:
-      - ai-net
 
   # 4. GPU Metrics (VRAM, Temp, Power)
   dcgm-exporter:
@@ -137,6 +136,21 @@ services:
       - ./smartlife-exporter/topology.json:/app/topology.json:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+    networks:
+      - ai-net
+
+  # 8. NVMe SMART health (wear, spare, media errors, temperature). Privileged: smartctl needs raw
+  #    device access. Not published; Prometheus scrapes it on ai-net (job smartctl).
+  smartctl-exporter:
+    image: prometheuscommunity/smartctl-exporter:v0.14.0
+    container_name: smartctl-exporter
+    cpuset: "8-15,24-31" # Strictly on CCD1
+    restart: unless-stopped
+    privileged: true
+    user: root
+    mem_limit: 128m
+    command:
+      - '--smartctl.interval=300s'
     networks:
       - ai-net
 
