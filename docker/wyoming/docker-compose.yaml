@@ -1,0 +1,73 @@
+# Home Assistant voice (2026-10-23): Wyoming Whisper (speech-to-text) + Piper (text-to-speech), CPU only.
+# HA adds them via the Wyoming Protocol integration: 192.0.2.26:10300 (Whisper), 192.0.2.26:10200 (Piper).
+# Wyoming has no auth, so ports bind to the LAN IP only. CCD1 like the other general services.
+services:
+  wyoming-whisper:
+    image: rhasspy/wyoming-whisper:latest
+    container_name: wyoming-whisper
+    cpuset: "8-15,24-31"
+    restart: unless-stopped
+    mem_limit: 1g
+    command: --model base-int8 --language en
+    volumes:
+      - ./whisper-data:/data   # model download, kept across rebuilds
+    ports:
+      - "192.0.2.26:10300:10300"
+
+  wyoming-piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: wyoming-piper
+    cpuset: "8-15,24-31"
+    restart: unless-stopped
+    mem_limit: 512m
+    command: --voice en_US-lessac-medium
+    volumes:
+      - ./piper-data:/data     # voice download
+    ports:
+      - "192.0.2.26:10200:10200"
+
+  # Server-side wake word fallback for the Fully tablets' Voice Satellite ("Home Assistant" detection mode).
+  wyoming-openwakeword:
+    image: rhasspy/wyoming-openwakeword:2.1.0
+    container_name: wyoming-openwakeword
+    cpuset: "8-15,24-31"
+    restart: unless-stopped
+    mem_limit: 512m
+    command: --preload-model hey_jarvis
+    ports:
+      - "192.0.2.26:10400:10400"
+
+  # Speech-to-text since 2026-10-23: Qwen3-ASR-0.6B on CPU (won a 4-model test). HA
+  # Wyoming entry 192.0.2.26:10302; wyoming-whisper stays up as the fallback (switch the pipeline's STT back).
+  wyoming-qwen3-asr:
+    build: ./qwen3-asr
+    image: wyoming-qwen3-asr:local
+    container_name: wyoming-qwen3-asr
+    cpuset: "8-15,24-31"
+    restart: unless-stopped
+    mem_limit: 8g
+    user: "1000:1000"
+    command: ["python", "-u", "/app/server.py", "--uri", "tcp://0.0.0.0:10302", "--threads", "8",
+              "--fixes", "/cfg/fixes.json", "--vocab", "/cfg/vocab.txt"]
+    volumes:
+      - ./qwen3-asr-data:/data   # model download, kept across rebuilds
+      - ./qwen3-asr:/cfg:ro      # fixes.json + vocab.txt (speech dictionary): edit on the host, reloaded on the next request
+    ports:
+      - "192.0.2.26:10302:10302"
+
+  # Qwen3-TTS live test (2026-10-24): bridge to qwentts.cpp tts-server (systemd --user unit qwentts-server, GPU 1,
+  # 127.0.0.1:8099). Host network so it reaches that loopback server. Rollback: HA pipeline back to Piper.
+  wyoming-qwen3-tts:
+    build: ./qwen3-tts
+    image: wyoming-qwen3-tts:local
+    container_name: wyoming-qwen3-tts
+    cpuset: "8-15,24-31"
+    restart: unless-stopped
+    mem_limit: 256m
+    user: "1000:1000"
+    network_mode: host
+    # 10-24: clone voice "steady" (clip made once by the Qwen3-TTS 1.7B VoiceDesign model from voice/steady-instruct.txt, seed 15).
+    volumes:
+      - ./qwen3-tts/voice:/app/voice:ro
+    command: ["python", "-u", "/app/server.py", "--uri", "tcp://192.0.2.26:10202", "--tempo", "1.1",
+              "--speaker", "steady", "--voice-wav", "/app/voice/steady.wav", "--voice-text", "/app/voice/steady.txt"]

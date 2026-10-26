@@ -34,6 +34,8 @@ most useful file here.
 | [`docs/AUDIT.md`](docs/AUDIT.md) | **Findings from auditing this setup against the live machine** |
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
 | [`llamampere/`](llamampere/README.md) | Pinned llamAmpere build + local patches for the main model |
+| [`qwen-queue/`](qwen-queue/README.md) | Idle-only background queue for Qwen jobs |
+| [`drivers/ixgbe-sfp/`](drivers/ixgbe-sfp/) | Setup + rollback for the M.2 Intel 82599 10GbE SFP+ card |
 | [`systemd/`](systemd/) | Units for the above |
 | [`docker/`](docker/) | Compose files for the whole stack, secrets parameterized |
 | [`veeam/`](veeam/) | Guest pre-freeze / post-thaw scripts (patched) |
@@ -86,12 +88,14 @@ it:
 
 ```
 CCD0 — cores 0-7  (L3 pool #0)        CCD1 — cores 8-15 (L3 pool #1)
-├─ 0-4  inference  (+SMT 16-20)       └─ 8-15 everything else (+SMT 24-31)
-├─ 5-6  web/ingress (+SMT 21-22)         postgres, qdrant, embeddings,
-└─ 7    GPU interrupts (+SMT 23)         tika, agents, monitoring
+├─ 0    kernel housekeeping (+SMT 16) └─ 8-15 everything else (+SMT 24-31)
+├─ 1-2  inference  (+SMT 17-18)          postgres, qdrant, embeddings,
+├─ 3-4  unassigned (+SMT 19-20)          tika, agents, monitoring, voice
+├─ 5-6  web/ingress (+SMT 21-22)
+└─ 7    GPU interrupts (+SMT 23)
 ```
 
-Inference gets five physical cores and an uncontended slice of L3. The RAG
+Inference gets two whole physical cores (both SMT threads) and an uncontended slice of L3. The RAG
 stack — vector search, chunking, database writes, document parsing — is
 cache-hostile and I/O-heavy by nature, so it is exiled to the other die where
 it can thrash as hard as it likes without evicting a single line of the
@@ -107,8 +111,10 @@ docker inspect -f '{{.Name}} {{.HostConfig.CpusetCpus}}' $(docker ps -q)
 > *N+1*. `cpuset: "0-4"` gives you five *logical* CPUs — one thread on each of
 > five physical cores, with the siblings (16-20) left to the host. All ten are
 > `"0-4,16-20"`. This repo once mislabeled `"0-4"` as the latter; see
-> [AUDIT #2](docs/AUDIT.md). The engine now runs on `"0-4"` by choice: with the
-> model fully on the GPUs, generation keeps exactly one core busy.
+> [AUDIT #2](docs/AUDIT.md). Since 2026-10-26 the engine runs on `"1-2,17-18"`:
+> two whole cores, skipping core 0 (kernel housekeeping). With the model fully
+> on the GPUs, generation keeps exactly one core busy, and an A/B against five
+> cores found no difference.
 
 ---
 
@@ -151,10 +157,16 @@ All of it is in [`docker/`](docker/), secrets parameterized, one directory per u
   lowered nDCG@10 by ~4 points against no reranker ([test](docs/reranker-test/README.md)); hybrid search is off
 - **Ingress** — `cloudflared` Zero Trust tunnel, no inbound ports opened
 - **Observability** — Prometheus, Grafana, node-exporter, dcgm-exporter,
-  snmp-exporter, plus a small custom exporter for llama-swap tokens/sec
+  snmp-exporter, smartctl-exporter (NVMe SMART), plus a small custom exporter for llama-swap tokens/sec
 - **Backups** — two layers: Borg nightly with Postgres/Qdrant pre-hooks, plus
   Veeam image-level backup with guest freeze/thaw scripts; the Borg repository is
   synced to Google Drive nightly and Veeam copies to a RAID on another machine
+- **Background Qwen work** — [`qwen-queue/`](qwen-queue/): one job at a time, only when the main model is
+  loaded and idle, with an hourly budget
+- **GPU cooling** — a VRAM-driven fan curve (`scripts/gpu-fan-curve.py`) on 2 s temperature sampling, because
+  the stacked cards' memory runs far hotter than the core the driver's curve follows (see docs/monitoring.md)
+- **Home Assistant voice** — [`docker/wyoming/`](docker/wyoming/): Qwen3-ASR speech-to-text on CPU and Qwen3-TTS
+  text-to-speech, with the local Qwen model as the conversation agent
 
 ---
 

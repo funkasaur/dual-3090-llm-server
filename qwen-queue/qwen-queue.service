@@ -1,0 +1,13 @@
+[Unit]
+Description=qwen-queue: bounded background queue for local Qwen (one job at a time, only when the main model is idle)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/dual-3090-llm-server/qwen-queue/qwenq.py worker
+Restart=always
+RestartSec=10
+# Tunables (defaults in qwenq.py): QWENQ_BUDGET_S=1200 generation seconds per rolling hour, QWENQ_MODEL, QWENQ_DB
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,4 @@
+[
+ ["\\b(graph\\s+on\\s+a|Graphana|Grafanna|raphana)\\b", "Grafana"],
+ ["\\b(Quen|Kwen|QN)\\b(?=\\s+(model|TTS|ASR|server|is|3))", "Qwen"]
+]

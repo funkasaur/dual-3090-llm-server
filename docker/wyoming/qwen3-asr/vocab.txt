@@ -1,0 +1,8 @@
+# Qwen3-ASR context: one term per line, passed to the model as background text to bias spelling. Edits apply on the next request.
+Grafana
+Prometheus
+Proxmox
+Home Assistant
+Qwen
+llama-swap
+Open WebUI
