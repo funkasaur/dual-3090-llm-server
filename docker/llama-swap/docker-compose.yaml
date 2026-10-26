@@ -10,12 +10,12 @@ services:
     image: ghcr.io/mostlygeek/llama-swap:unified-cuda
     container_name: llama-swap-unified
 
-    # Five physical cores, one hardware thread each; their SMT siblings
-    # (16-20 on a 5950X, where the sibling of core N is N+16) stay with the
-    # host. Matches --threads 5 / --threads-batch 5. With every layer on the
-    # GPUs, generation keeps one core busy. Use "0-4,16-20" for all ten.
-    # See docs/cpu-topology.md and AUDIT #2.
-    cpuset: "0-4"
+    # Two physical cores (1-2) with their SMT siblings (17-18 on a 5950X,
+    # where the sibling of core N is N+16). Core 0 is left to the kernel's
+    # housekeeping. Matches --threads 2 / --threads-batch 2. With every layer
+    # on the GPUs, generation keeps one core busy (it spin-waits on the GPU);
+    # an A/B found no difference against five cores. See docs/cpu-topology.md.
+    cpuset: "1-2,17-18"
 
     restart: unless-stopped
     logging:
@@ -39,6 +39,10 @@ services:
       - ./data:/app/data
       # The llamAmpere build (see llamampere/build.sh).
       - ./llamampere/bin:/opt/llamampere:ro
+      # llamAmpere's prompt-cache disk tier: the RAM prompt cache is written here at unload
+      # and restored at the next load of the same model + KV config (~1.4 s for a 33k prompt vs ~20 s
+      # prefill). Without this mount it sits in the container layer and is lost on every re-create.
+      - ./prompt-cache:/root/.cache/llamampere
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
 
@@ -50,15 +54,31 @@ services:
               count: all
               capabilities: [gpu]
 
+    # Explicit NVIDIA device nodes. With Docker's systemd cgroup driver on
+    # cgroup v2, a host `systemctl daemon-reload` can drop the GPU device
+    # permissions the nvidia runtime injected; new model loads then fail with
+    # "Failed to initialize NVML: Unknown Error" until a restart. Devices
+    # listed here go into the container's own cgroup rules and survive a
+    # reload. Keep the deploy block above (it injects the driver libraries).
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidia1:/dev/nvidia1
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - LLAMA_ATTN_ROT_DISABLE=1
       # One OpenMP thread per physical core in the inference zone.
-      - OMP_NUM_THREADS=5
+      - OMP_NUM_THREADS=2
       # NOT "close": with binding on, libgomp pins the main thread to the
       # first core at load and every later thread inherits it, confining the
       # whole server to core 0. OMP_PLACES alone implies binding. AUDIT #12.
       - OMP_PROC_BIND=false
+      # With OMP_PROC_BIND=false this binds nothing; threads stay free across the cpuset.
+      - OMP_PLACES=cores
 
     # Lets the engine mlock weights so they are never swapped out.
     cap_add:

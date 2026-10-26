@@ -6,7 +6,7 @@
 # llama-swap with a free port.
 #
 # Two backends. The main model runs llamAmpere (a llama.cpp fork with Ampere
-# attention kernels, built from ../../llamampere/ and mounted at /opt/llamampere).
+# attention kernels, built from ../../llamampere/ (v0.5.5 + local patches) and mounted at /opt/llamampere).
 # Everything else runs ik-llama-server (the ik_llama.cpp fork shipped in the
 # llama-swap image), which also keeps the previous configuration of the main
 # model as a fallback entry. The two accept different flags; see docs/inference.md.
@@ -23,8 +23,8 @@ models:
   # ---------------------------------------------------------------------
   # Dense 27B at Q8 across both cards: the main model, on llamAmpere.
   #
-  # Threading: cpuset "0-4" (five physical cores, no SMT siblings). With every
-  # layer on the GPUs, generation keeps one core busy, so 5/5 is plenty.
+  # Threading: cpuset "1-2,17-18" (two physical cores with SMT siblings). With
+  # every layer on the GPUs, generation keeps one core busy, so 2/2 is plenty.
   #
   # --split-mode tensor: tensor parallelism over NVLink (NCCL). --tensor-split
   # 50,50 puts even weights on both cards (~20.5 GB each); the split moves in
@@ -44,8 +44,8 @@ models:
       --batch-size 4096
       --ubatch-size 1024
       --n-gpu-layers 99
-      --threads 5
-      --threads-batch 5
+      --threads 2
+      --threads-batch 2
       --split-mode tensor
       --tensor-split 50,50
       --flash-attn on
@@ -91,8 +91,8 @@ models:
       --batch-size 4096
       --ubatch-size 1024
       --n-gpu-layers 99
-      --threads 5
-      --threads-batch 5
+      --threads 2
+      --threads-batch 2
       --cache-ram 16384
       --split-mode graph
       --spec-type mtp:n_max=4,p_min=0.8
@@ -121,9 +121,9 @@ models:
       --batch-size 4096
       --ubatch-size 1024
       --n-gpu-layers 99
-      --threads 5
-      --threads-batch 5
-      --threads-mtmd 5
+      --threads 2
+      --threads-batch 2
+      --threads-mtmd 2
       --mtmd-kq-type f16
       --split-mode graph
       --jinja
@@ -143,7 +143,7 @@ models:
       --port ${PORT}
       --ctx-size 32768
       --n-gpu-layers 99
-      --threads 5
+      --threads 2
       --flash-attn on
       --jinja
     ttl: 300

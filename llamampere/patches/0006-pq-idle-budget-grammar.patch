@@ -1,0 +1,253 @@
+From 14e3fc6120f1d89497919210d84cb28576d99dd4 Mon Sep 17 00:00:00 2001
+From: Funkasaur <150561769+funkasaur@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 12:01:00 -0400
+Subject: [PATCH] 0006: exact p/q verify while reasoning budget / lazy grammar
+ are idle (UNTESTED)
+
+Per verify position, use p/q when the reasoning budget is not forcing and a lazy grammar
+still awaits its trigger; id-match otherwise. Drafter takes argmax when the target will
+id-match the first position. LLAMA_PQ_IDLE_BUDGET=0 restores the old behavior.
+
+---
+ common/sampling.cpp             | 59 ++++++++++++++++++++++++++++++---
+ common/sampling.h               | 10 +++++-
+ common/speculative.cpp          |  4 +--
+ common/speculative.h            |  3 ++
+ src/llama-ext.h                 |  4 +++
+ src/llama-sampler.cpp           | 12 +++++++
+ tools/server/server-context.cpp |  5 +++
+ 7 files changed, 89 insertions(+), 8 deletions(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 87628cd..67c4007 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -13,6 +13,7 @@
+ #include <cctype>
+ #include <climits>
+ #include <cmath>
++#include <cstdlib>
+ #include <cstring>
+ #include <random>
+ #include <unordered_map>
+@@ -479,7 +480,7 @@ void common_sampler_free(struct common_sampler * gsmpl) {
+     delete gsmpl;
+ }
+ 
+-static bool grammar_should_apply(struct common_sampler * gsmpl) {
++static bool grammar_should_apply(const struct common_sampler * gsmpl) {
+     if (!gsmpl->grmr) {
+         return false;
+     }
+@@ -1064,12 +1065,52 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
+     return common_sampler_sample_and_accept_n(gsmpl, ctx, idxs, draft, grammar_first);
+ }
+ 
++// [0006] LLAMA_PQ_IDLE_BUDGET=0 restores the old rule: no p/q at all while a reasoning budget or grammar exists
++static bool pq_idle_enabled() {
++    static const bool v = [] {
++        const char * e = getenv("LLAMA_PQ_IDLE_BUDGET");
++        const bool on = e == nullptr || std::strcmp(e, "0") != 0;
++        LOG_INF("%s: exact p/q while reasoning budget / lazy grammar are idle: %s (LLAMA_PQ_IDLE_BUDGET)\n", __func__, on ? "on" : "off");
++        return on;
++    }();
++    return v;
++}
++
++// [0006] why the next position cannot use p/q: 0 = it can, 1 = the reasoning budget forces a token, 2 = the grammar constrains
++// only accept() moves these states, so the value holds from now until the token of this position is accepted
++static int pq_position_block(const struct common_sampler * gsmpl) {
++    if (gsmpl->rbudget && common_reasoning_budget_get_state(gsmpl->rbudget) == REASONING_BUDGET_FORCING) {
++        return 1;
++    }
++    if (grammar_should_apply(gsmpl) && llama_sampler_grammar_awaiting_trigger(gsmpl->grmr) != 1) {
++        return 2;
++    }
++    return 0;
++}
++
+ bool common_sampler_pq_supported(const struct common_sampler * gsmpl) {
+-    if (!gsmpl || gsmpl->grmr || gsmpl->rbudget) {
++    if (!gsmpl) {
+         return false;
+     }
+     const auto & params = gsmpl->params;
+-    return params.temp > 0.0f && params.mirostat == 0;
++    if (!(params.temp > 0.0f && params.mirostat == 0)) {
++        return false;
++    }
++    if (!gsmpl->grmr && !gsmpl->rbudget) {
++        return true;
++    }
++    if (!pq_idle_enabled()) {
++        return false;
++    }
++    // a grammar that is not lazy, or whose trigger state is unknown (llguidance), always counts as constraining
++    return !gsmpl->grmr || (params.grammar_lazy && llama_sampler_grammar_awaiting_trigger(gsmpl->grmr) >= 0);
++}
++
++bool common_sampler_pq_verify_next(const struct common_sampler * gsmpl) {
++    if (!pq_idle_enabled()) {
++        return true;
++    }
++    return common_sampler_pq_supported(gsmpl) && pq_position_block(gsmpl) == 0;
+ }
+ 
+ const common_sampler_pq_stats & common_sampler_get_pq_stats(const struct common_sampler * gsmpl) {
+@@ -1089,8 +1130,13 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_pq(struct common_sam
+     auto & stats = gsmpl->pq_stats;
+     std::uniform_real_distribution<double> uniform(0.0, 1.0);
+ 
++    // [0006] with a reasoning budget or lazy grammar, each position picks p/q or id-match from the state of the accepted prefix
++    const bool gated = gsmpl->grmr || gsmpl->rbudget;
++
+     size_t i = 0;
+     for (; i < draft.size(); i++) {
++        const int block = gated ? pq_position_block(gsmpl) : 0;
++
+         // x ~ p, the target chain's own draw; it also leaves cur_p holding p over the surviving candidates
+         const llama_token x = common_sampler_sample(gsmpl, ctx, idxs[i], grammar_first);
+         const llama_token d = draft[i];
+@@ -1107,8 +1153,10 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_pq(struct common_sam
+         const bool have_q = i < draft_q.size() && !draft_q[i].empty();
+         const bool cpu_p  = cur_p.size > 0 && cur_p.selected >= 0 && llama_get_sampled_token_ith(ctx, idxs[i]) == LLAMA_TOKEN_NULL;
+ 
+-        if (!have_q || !cpu_p) {
+-            // id-match for this and the remaining positions
++        if (!have_q || !cpu_p || block != 0) {
++            // id-match for this position: x is the full sampler's draw (budget and grammar included)
++            stats.n_fb_budget  += block == 1;
++            stats.n_fb_grammar += block == 2;
+             common_sampler_accept(gsmpl, x, true);
+             result.push_back(x);
+             if (d != x) {
+@@ -1144,6 +1192,7 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_pq(struct common_sam
+         const double q_d = q_of(d);
+ 
+         stats.n_pos++;
++        stats.n_idle += gated;
+         stats.sum_p_d += p_d;
+         stats.sum_min += sum_min;
+ 
+diff --git a/common/sampling.h b/common/sampling.h
+index b6f9df1..1b681d6 100644
+--- a/common/sampling.h
++++ b/common/sampling.h
+@@ -134,11 +134,19 @@ struct common_sampler_pq_stats {
+     size_t n_rej   = 0; // rejected: token drawn from the residual distribution norm(max(p - q, 0))
+     double sum_p_d = 0; // sum of p(draft[i]): the id-match acceptance probability
+     double sum_min = 0; // sum of sum_x min(p(x), q(x)): the p/q acceptance probability
++    // [0006] p/q with a reasoning budget or lazy grammar present (LLAMA_PQ_IDLE_BUDGET)
++    size_t n_idle       = 0; // positions verified with p/q while both left the distribution untouched (part of n_pos)
++    size_t n_fb_budget  = 0; // positions verified by id-match because the reasoning budget was forcing
++    size_t n_fb_grammar = 0; // positions verified by id-match because the grammar was constraining
+ };
+ 
+-// true when the chain samples on the CPU at temperature > 0 without grammar, reasoning budget or mirostat
++// true when the chain samples on the CPU at temperature > 0 without mirostat, and without grammar or reasoning budget
++// [0006] unless LLAMA_PQ_IDLE_BUDGET != 0: then a reasoning budget and a lazy grammar are allowed, checked per position
+ bool common_sampler_pq_supported(const struct common_sampler * gsmpl);
+ 
++// [0006] true if the next position will be verified with p/q (always true with LLAMA_PQ_IDLE_BUDGET=0: drafter decides alone)
++bool common_sampler_pq_verify_next(const struct common_sampler * gsmpl);
++
+ // replay: the draft is a previously verified result being re-decoded after a checkpoint restore, so a
+ // rejection at its last position is the recorded outcome and the fresh token after it is still sampled
+ std::vector<llama_token> common_sampler_sample_and_accept_n_pq(struct common_sampler * gsmpl, struct llama_context * ctx, const std::vector<int> & idxs, const llama_tokens & draft, const std::vector<std::vector<llama_token_data>> & draft_q, bool grammar_first = false, bool replay = false);
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index e3a0146..be1c5ff 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -2326,7 +2326,7 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+                 float   s_temp  = 0.0f;
+                 float   s_top_p = 1.0f;
+                 float   s_min_p = 0.0f;
+-                const bool sampled = chain_sampled && dp.sampling && dp.result_q && pq_params_ok(*dp.sampling) &&
++                const bool sampled = chain_sampled && dp.pq_verify && dp.sampling && dp.result_q && pq_params_ok(*dp.sampling) &&
+                         chain_sampled_params(*dp.sampling, s_k, s_temp, s_top_p, s_min_p);
+                 if (sampled) {
+                     auto & rng = chain_rng[seq_one];
+@@ -2550,7 +2550,7 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+ 
+                 // exact p/q: sample the draft token from the request-matched distribution and keep that
+                 // distribution for the verifier; otherwise the drafter's argmax under its own top-k chain
+-                bool pq = pq_enabled && dp.sampling && dp.result_q && pq_params_ok(*dp.sampling);
++                bool pq = pq_enabled && dp.pq_verify && dp.sampling && dp.result_q && pq_params_ok(*dp.sampling);
+ 
+                 auto * smpl = pq ? pq_sampler(seq_id, *dp.sampling) : smpls[seq_id].get();
+ 
+diff --git a/common/speculative.h b/common/speculative.h
+index abf6e24..031819d 100644
+--- a/common/speculative.h
++++ b/common/speculative.h
+@@ -87,6 +87,9 @@ struct common_speculative_draft_params {
+     // exact p/q path above (LLAMA_SPEC_PQ=1, `sampling`) is the sampled-draft implementation.
+     float    temp = 1.0f;
+     uint32_t seed = LLAMA_DEFAULT_SEED;
++
++    // [0006] false if the target verifies the first draft position by id-match (budget forcing, grammar constraining): draft argmax then
++    bool pq_verify = true;
+ };
+ 
+ common_speculative_draft_params & common_speculative_get_draft_params(common_speculative * spec, llama_seq_id seq_id);
+diff --git a/src/llama-ext.h b/src/llama-ext.h
+index a74d13e..2f2b354 100644
+--- a/src/llama-ext.h
++++ b/src/llama-ext.h
+@@ -201,3 +201,7 @@ LLAMA_API bool llama_sampler_backend_supports_rows(const struct llama_sampler *
+ LLAMA_API bool llama_sampler_chain_is_backend(const struct llama_sampler * sampler);
+ // supports_rows, and (for a chain) every sampler was offloaded by backend_init: safe for multi-row sampling
+ LLAMA_API bool llama_sampler_backend_rows_ready(const struct llama_sampler * sampler);
++
++// [0006] 1 while a lazy grammar sampler (llama_sampler_init_grammar*) awaits its trigger and so leaves all logits untouched, 0 once it constrains
++// -1 if the sampler is not such a grammar sampler (e.g. llguidance) or holds no grammar
++LLAMA_API int32_t llama_sampler_grammar_awaiting_trigger(const struct llama_sampler * sampler);
+diff --git a/src/llama-sampler.cpp b/src/llama-sampler.cpp
+index 9906682..9537baa 100644
+--- a/src/llama-sampler.cpp
++++ b/src/llama-sampler.cpp
+@@ -4481,6 +4481,18 @@ bool llama_sampler_backend_rows_ready(const llama_sampler * sampler) {
+     return true;
+ }
+ 
++int32_t llama_sampler_grammar_awaiting_trigger(const llama_sampler * sampler) {
++    if (!sampler || sampler->iface != &llama_sampler_grammar_i) {
++        return -1;
++    }
++    const auto * ctx = (const llama_sampler_grammar *) sampler->ctx;
++    if (!ctx->grammar) {
++        return -1;
++    }
++    // llama_grammar_apply_impl returns before touching cur_p while this is set
++    return ctx->grammar->awaiting_trigger ? 1 : 0;
++}
++
+ bool llama_sampler_chain_is_backend(const llama_sampler * sampler) {
+     if (!sampler || sampler->iface != &llama_sampler_chain_i) {
+         return false;
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index 43563d4..a790c37 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -1230,6 +1230,10 @@ struct server_slot {
+                             "spec pq: n=%zu match=%zu extra=%zu rej=%zu mean_p_d=%.4f mean_summin=%.4f\n",
+                             pq.n_pos, pq.n_match, pq.n_extra, pq.n_rej, pq.sum_p_d / pq.n_pos, pq.sum_min / pq.n_pos);
+                 }
++                if (pq.n_idle + pq.n_fb_budget + pq.n_fb_grammar > 0) {
++                    SLT_INF(*this, "spec pq idle (0006): pq_pos=%zu fb_budget=%zu fb_grammar=%zu\n",
++                            pq.n_idle, pq.n_fb_budget, pq.n_fb_grammar);
++                }
+             }
+         }
+ 
+@@ -4683,6 +4687,7 @@ private:
+                             /* .result_q = */ &slot.spec_draft_q,
+                             /* .temp     = */ slot.task->params.sampling.temp,
+                             /* .seed     = */ slot.task->params.sampling.seed,
++                            /* .pq_verify = */ common_sampler_pq_verify_next(slot.smpl.get()),
+                         };
+ 
+                         drafting.push_back(&slot);
+-- 
+2.56.0.windows.2
+

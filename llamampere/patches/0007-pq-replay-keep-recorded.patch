@@ -1,0 +1,32 @@
+From 048826c2645e2ad057edcb9fe0f47be113cc2e22 Mon Sep 17 00:00:00 2001
+From: Funkasaur <150561769+funkasaur@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 12:01:21 -0400
+Subject: [PATCH] 0006r: p/q replay keeps every recorded token instead of
+ re-testing (UNTESTED)
+
+common_sampler_copy does not restore pq_rng, so a checkpoint replay re-tested accepted
+positions with fresh draws and could reject a token that was accepted.
+
+---
+ common/sampling.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 67c4007..384e3cc 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -1141,9 +1141,10 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_pq(struct common_sam
+         const llama_token x = common_sampler_sample(gsmpl, ctx, idxs[i], grammar_first);
+         const llama_token d = draft[i];
+ 
+-        if (replay && i + 1 == draft.size()) {
++        if (replay) {
+             // the last token of a replayed draft is the recorded outcome of a rejection (a residual draw, or the
+             // chain's own draw on the id-match path): the chain has advanced identically, so it stands as is
++            // [0006r] the earlier tokens were accepted: keep them, a re-test would use fresh pq_rng draws (common_sampler_copy does not restore it)
+             common_sampler_accept(gsmpl, d, true);
+             result.push_back(d);
+             continue;
+-- 
+2.56.0.windows.2
+

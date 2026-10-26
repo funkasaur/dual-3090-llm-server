@@ -1,0 +1,262 @@
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 0b4d116..05ec507 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -294,10 +294,12 @@ llama_context::llama_context(const llama_model & model, llama_context_params par
+             path = nullptr;
+         }
+         if (path != nullptr && path[0] != '\0') {
+-            if (model.split_mode() == LLAMA_SPLIT_MODE_TENSOR) {
+-                // the head is sharded across the Meta device and backend sampling is unavailable there:
+-                // the draft scores the full head, so the map tensor is not created (see draft_vocab_direct)
+-                LLAMA_LOG_WARN("%s: --spec-draft-vocab-map is not used with SPLIT_MODE_TENSOR, the draft scores the full head\n", __func__);
++            // [0004] SPLIT_MODE_TENSOR: init_draft_vocab builds the compact head as a row-split weight and the
++            // draft samples the compact logits on the host (draft_vocab.tsplit); LLAMA_DRAFT_VOCAB_TSPLIT=0 restores
++            // the old full-head draft
++            const char * ts_env = getenv("LLAMA_DRAFT_VOCAB_TSPLIT");
++            if (model.split_mode() == LLAMA_SPLIT_MODE_TENSOR && ts_env != nullptr && std::strcmp(ts_env, "0") == 0) {
++                LLAMA_LOG_WARN("%s: --spec-draft-vocab-map is not used with SPLIT_MODE_TENSOR (LLAMA_DRAFT_VOCAB_TSPLIT=0), the draft scores the full head\n", __func__);
+             } else {
+                 init_draft_vocab(path, params.draft_vocab_hot);
+             }
+@@ -1093,7 +1095,20 @@ void llama_context::init_draft_vocab(const char * path, int32_t n_hot) {
+     // [#81] compact resident draft head: auto for EXL3 heads (no one-row path), LLAMA_DRAFT_VOCAB_COMPACT=1 forces it
+     // on any head (A/B), =0 keeps the full-head fallback; prism-rotated heads keep their fallback
+     ggml_type compact_type = GGML_TYPE_COUNT;
+-    {
++    // [0004] tensor split: the full head is row-split on the Meta device and has no one-row path, so the compact head
++    // is required; it keeps the head's type (rows copied byte for byte, logits identical to the head's at those ids)
++    // and is allocated in the head's Meta buffer type, which row-splits it like output.weight (see
++    // llama_meta_device_get_split_state)
++    const bool tsplit = model.split_mode() == LLAMA_SPLIT_MODE_TENSOR;
++    if (tsplit) {
++        if (ggml_exl3_bits(head->type) != 0 || model.hadamard_rotations.count(head) || model.hparams.no_alloc ||
++                !ggml_is_contiguous(head) || n_sel >= head->ne[1]) {
++            LLAMA_LOG_WARN("%s: head %s (%s) cannot be compacted under SPLIT_MODE_TENSOR, the draft scores the full head\n",
++                    __func__, ggml_get_name(head), ggml_type_name(head->type));
++            return;
++        }
++        compact_type = head->type;
++    } else {
+         const char * env = getenv("LLAMA_DRAFT_VOCAB_COMPACT");
+         const int force = env != nullptr && env[0] != '\0' ? atoi(env) : -1;
+         const bool is_exl3 = ggml_exl3_bits(head->type) != 0;
+@@ -1192,11 +1207,23 @@ void llama_context::init_draft_vocab(const char * path, int32_t n_hot) {
+         }
+         std::vector<uint8_t> rows(ggml_nbytes(draft_vocab.compact));
+         const int n_thr = std::max(1, (int) std::min<uint32_t>(cparams.n_threads_batch, 16));
+-        if (!llama_draft_compact_build(src, map.ids.data(), n_sel, compact_type, rows.data(), n_thr)) {
++        if (tsplit) {
++            // [0004] same type: copy the shortlisted rows byte for byte
++            const size_t row_bytes = ggml_row_size(head->type, head->ne[0]);
++            GGML_ASSERT(row_bytes == head->nb[1] && rows.size() == (size_t) n_sel * row_bytes);
++            for (int64_t i = 0; i < n_sel; ++i) {
++                const int32_t id = map.ids[i];
++                if (id < 0 || id >= head->ne[1]) {
++                    throw std::runtime_error(format("draft vocabulary map: id %d out of range", id));
++                }
++                std::memcpy(rows.data() + i * row_bytes, head_bytes.data() + (size_t) id * row_bytes, row_bytes);
++            }
++        } else if (!llama_draft_compact_build(src, map.ids.data(), n_sel, compact_type, rows.data(), n_thr)) {
+             throw std::runtime_error("draft vocabulary map: building the compact draft head failed");
+         }
+         ggml_backend_tensor_set(draft_vocab.compact, rows.data(), 0, rows.size());
+         draft_vocab.compact_src = head;
++        draft_vocab.tsplit      = tsplit;
+         // WARN so it shows at the server's default verbosity: resident memory next to the model weights
+         LLAMA_LOG_WARN("%s: compact draft head: type %s, n_sel %lld, %.1f MiB on %s, from %s (%s) in %.2f s (%d threads)\n",
+                 __func__, ggml_type_name(compact_type), (long long) n_sel,
+@@ -2458,9 +2485,30 @@ float * llama_context::get_sampled_probs_ith(int32_t idx) {
+     }
+ }
+ 
++int64_t llama_context::draft_vocab_tsplit_row(int32_t idx) {
++    if (!draft_vocab.tsplit) {
++        return -1;
++    }
++    output_reorder();
++    int64_t j = -1;
++    if (idx < 0) {
++        j = n_outputs + idx;
++    } else if ((size_t) idx < output_ids.size()) {
++        j = output_ids[idx];
++    }
++    if (j < 0 || j >= n_outputs || (size_t) j >= draft_vocab.tsplit_rows.size() || !draft_vocab.tsplit_rows[j]) {
++        return -1;
++    }
++    return j;
++}
++
+ float * llama_context::get_sampled_logits_ith(int32_t idx) {
+     output_reorder();
+ 
++    if (const int64_t r = draft_vocab_tsplit_row(idx); r >= 0) {
++        return draft_vocab.tsplit_logits.data() + r * (int64_t) draft_vocab.host.size();
++    }
++
+     if (!sampling.logits.has_data()) {
+         return nullptr;
+     }
+@@ -2480,6 +2528,10 @@ float * llama_context::get_sampled_logits_ith(int32_t idx) {
+ const llama_token * llama_context::get_sampled_candidates_ith(int32_t idx) {
+     output_reorder();
+ 
++    if (draft_vocab_tsplit_row(idx) >= 0) {
++        return draft_vocab.host.data();
++    }
++
+     try {
+         const int64_t row = output_resolve_row(idx);
+         if (sampling.candidates.has_data() && (size_t) row < sampling.candidates_count.size() &&
+@@ -2497,6 +2549,10 @@ const llama_token * llama_context::get_sampled_candidates_ith(int32_t idx) {
+ size_t llama_context::get_sampled_candidates_count(int32_t idx) {
+     output_reorder();
+ 
++    if (draft_vocab_tsplit_row(idx) >= 0) {
++        return draft_vocab.host.size();
++    }
++
+     if (!sampling.candidates.has_data()) {
+         return 0;
+     }
+@@ -2516,6 +2572,10 @@ size_t llama_context::get_sampled_candidates_count(int32_t idx) {
+ size_t llama_context::get_sampled_logits_count(int32_t idx) {
+     output_reorder();
+ 
++    if (draft_vocab_tsplit_row(idx) >= 0) {
++        return draft_vocab.host.size();
++    }
++
+     if (!sampling.logits.has_data()) {
+         return model.vocab.n_tokens();
+     }
+@@ -3418,6 +3478,12 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+         return -2;
+     };
+ 
++    // [0004] rows of this batch that get compact (tensor-split shortlist) logits are marked during extraction
++    if (draft_vocab.tsplit) {
++        draft_vocab.tsplit_rows.assign(n_outputs_all, 0);
++        draft_vocab.tsplit_logits.resize((size_t) n_outputs_all * draft_vocab.host.size());
++    }
++
+     // start a new sampling transaction for this logical batch
+     for (const auto & entry : sampling.samplers) {
+         llama_sampler_backend_begin(entry.second);
+@@ -3506,7 +3572,17 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+ 
+             float * logits_out = logits.data + n_outputs_prev * n_vocab;
+ 
+-            if (n_outputs) {
++            if (draft_vocab.tsplit && res->t_logits_ids != nullptr) {
++                // [0004] compact shortlist logits [n_sel, n_outputs]: host copy, read back as sampled candidates
++                const int64_t n_sel = (int64_t) draft_vocab.host.size();
++                GGML_ASSERT(t_logits->ne[0] == n_sel && t_logits->ne[1] == n_outputs && !cparams.mtp_chain);
++                GGML_ASSERT((size_t) (n_outputs_prev + n_outputs) <= draft_vocab.tsplit_rows.size());
++                ggml_backend_tensor_get_async(backend_res, t_logits,
++                        draft_vocab.tsplit_logits.data() + n_outputs_prev * n_sel, 0,
++                        (size_t) n_outputs * n_sel * sizeof(float));
++                std::fill(draft_vocab.tsplit_rows.begin() + n_outputs_prev,
++                          draft_vocab.tsplit_rows.begin() + n_outputs_prev + n_outputs, 1);
++            } else if (n_outputs) {
+                 // chain mode: logits are [2, n_chain] pairs, not [n_vocab, n_outputs]
+                 const size_t extract_bytes =
+                     cparams.mtp_chain ? ggml_nbytes(t_logits) : (size_t) n_outputs * n_vocab * sizeof(float);
+@@ -4016,6 +4092,13 @@ void llama_context::output_reorder() {
+             std::swap(sampling.probs_count[i0], sampling.probs_count[i1]);
+             std::swap(sampling.candidates_count[i0], sampling.candidates_count[i1]);
+         }
++
++        if (draft_vocab.tsplit && i0 < draft_vocab.tsplit_rows.size() && i1 < draft_vocab.tsplit_rows.size()) {
++            const uint64_t n_sel = draft_vocab.host.size();
++            std::swap_ranges(draft_vocab.tsplit_logits.begin() + i0*n_sel, draft_vocab.tsplit_logits.begin() + (i0 + 1)*n_sel,
++                             draft_vocab.tsplit_logits.begin() + i1*n_sel);
++            std::swap(draft_vocab.tsplit_rows[i0], draft_vocab.tsplit_rows[i1]);
++        }
+     }
+ 
+     output_swaps.clear();
+diff --git a/src/llama-context.h b/src/llama-context.h
+index 0001768..e8db223 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -295,6 +295,8 @@ public:
+     int32_t draft_vocab_refresh();
+     int32_t draft_vocab_n_hot()        const { return draft_vocab.n_hot; }
+     size_t  draft_vocab_n_candidates() const { return draft_vocab.hot.cands.size(); }
++    // [0004] output row holding compact tensor-split shortlist logits for batch index idx, or -1
++    int64_t draft_vocab_tsplit_row(int32_t idx);
+ 
+ private:
+     llm_graph_result * get_gf_res_prev();
+@@ -432,6 +434,11 @@ private:
+         int32_t                 n_hot = 0;     // trailing adaptive slots (0 = fully static map)
+         llama_mtp_hot_vocab     hot;           // ranking policy for those slots
+         mutable std::atomic<uint32_t> warned{0}; // full-head fallback reasons already logged (llm_graph_params)
++        // [0004] SPLIT_MODE_TENSOR: compact is row-split like output.weight and its logits come to the host as
++        // [n_sel, n_outputs]; the sampler reads them as candidates (ids = host) through get_sampled_logits_ith
++        bool                    tsplit = false;
++        std::vector<float>      tsplit_logits; // [n_outputs_max, n_sel]
++        std::vector<uint8_t>    tsplit_rows;   // per output row: 1 = compact logits in tsplit_logits
+     };
+ 
+     draft_vocab_info draft_vocab;
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 4b5c7dc..94efb74 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -5024,6 +5024,28 @@ ggml_tensor * llm_graph_context::build_draft_vocab_logits(
+     }
+     // [#81] a compact head built from this head replaces the hadamard_head / head_layout outcomes
+     const bool compact = draft_vocab_compact != nullptr && draft_vocab_compact_src == head_w;
++    // [0004] tensor split: the compact head is row-split like the head, so the Meta backend gathers its logits the
++    // same way; there is no backend sampler, the context copies [n_sel, n_outputs] to the host and the CPU sampler
++    // reads them as candidates (llama_context::get_sampled_logits_ith)
++    if (compact && model_ref && model_ref->split_mode() == LLAMA_SPLIT_MODE_TENSOR) {
++        if (loras && !loras->empty()) {
++            return draft_vocab_fallback(DRAFT_VOCAB_FALLBACK_LORA, "a LoRA adapter is loaded");
++        }
++        if (head_s && ggml_nelements(head_s) != 1) {
++            return draft_vocab_fallback(DRAFT_VOCAB_FALLBACK_HEAD_SCALE, "the output head has a per-row scale");
++        }
++        GGML_ASSERT(cur->ne[1] == n_outputs);
++        // v0.5.5 has no fallback ledger: log once per process that the tensor-split shortlist path is in use
++        static std::atomic<bool> tsplit_logged{false};
++        if (!is_reserve && !tsplit_logged.exchange(true)) {
++            LLAMA_LOG_WARN("%s: [0004] draft vocabulary shortlist applied under SPLIT_MODE_TENSOR: tsplit_compact n_sel=%lld\n",
++                    __func__, (long long) draft_vocab_ids->ne[0]);
++        }
++        ggml_tensor * logits = build_draft_vocab_compact(head_w, head_s, cur); // [n_sel, n_outputs]
++        cb(logits, "draft_vocab_logits", -1);
++        res->t_logits_ids = draft_vocab_ids;
++        return logits;
++    }
+     if (!compact && hadamard_rotations && hadamard_rotations->count(head_w)) {
+         return draft_vocab_fallback(DRAFT_VOCAB_FALLBACK_HADAMARD, "the output head is Hadamard-rotated");
+     }
+@@ -5091,6 +5113,10 @@ ggml_tensor * llm_graph_context::build_draft_vocab_logits_chain(
+         return nullptr;
+     }
+     const bool compact = draft_vocab_compact != nullptr && draft_vocab_compact_src == head_w;
++    if (model_ref && model_ref->split_mode() == LLAMA_SPLIT_MODE_TENSOR) {
++        // [0004] the tensor-split compact path only covers the sequential draft (host-side sampling)
++        return draft_vocab_fallback(DRAFT_VOCAB_FALLBACK_HEAD_LAYOUT, "chained MTP under SPLIT_MODE_TENSOR");
++    }
+     if (!compact && hadamard_rotations && hadamard_rotations->count(head_w)) {
+         return draft_vocab_fallback(DRAFT_VOCAB_FALLBACK_HADAMARD, "the output head is Hadamard-rotated");
+     }
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index a5694f1..2f18b7d 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -636,6 +636,10 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+             }
+             return get_tensor_config_impl(GGML_BACKEND_SPLIT_AXIS_1);
+         }
++        // [0004] compact draft head (llama_context::init_draft_vocab): rows of the head, split the same way
++        if (tensor_name == "draft_vocab_compact" && !is_dsv4) {
++            return get_tensor_config_impl(GGML_BACKEND_SPLIT_AXIS_1);
++        }
+         if (std::regex_match(tensor_name, pattern_output_bias)) {
+             const ggml_tensor * output_weight = ud->model->get_tensor("output.weight");
+             GGML_ASSERT(output_weight != nullptr);

@@ -5,7 +5,7 @@
 #   usage: ./build.sh            (builds the pinned commit + patches/*.patch in a throwaway container)
 set -euo pipefail
 cd "$(dirname "$0")"
-COMMIT=d5b0ba7c5b2c9ec46f8746a491f6fb13c5a431f2   # JakeATX/llamAmpere tag v0.5.2, 2026-10-11 (old patch 0001 is upstream there as dc2b130)
+COMMIT=3e247ff97e88a7b80dd21707cedc8e27c95d62ec   # JakeATX/llamAmpere tag v0.5.5, 2026-10-15 (patches 0002-0004, 0006, 0007)
 IMAGE=nvidia/cuda:12.9.1-devel-ubuntu24.04
 rm -rf bin.new && mkdir -p bin.new
 docker run --rm --cpuset-cpus 5-31 --memory 24g -u 0 -v "$PWD":/work "$IMAGE" bash -c "

@@ -102,6 +102,15 @@ eager launches vs 18k replays per two 33k requests). Patch 0003 reads the cap fr
 decode +3.8-4.4% at 33k-150k (10 runs per cell), numerics identical (KL 0), stress
 clean, +84 MiB VRAM per card. Details: [`llamampere/README.md`](../llamampere/README.md).
 
+**NVLink and split mode** (measured 2026-10-14). Tensor split with NVLink off
+(`NCCL_P2P_DISABLE=1`: NCCL goes over shared memory, NVLink data counters read 0)
+decodes 7.0% / 6.0% slower at 33k / 108k (150k too noisy to call), with identical
+outputs. Layer split 50,50 decodes 63.9 / 55.3 / 50.8 t/s at 33k / 108k / 150k,
+22-29% slower than tensor with or without the link, sends nothing over NVLink, and
+needs 20.1 / 22.5 GB (it falls back from pipeline parallelism at load). So tensor
+50,50 with NVLink stays; without a bridge, tensor split still beats layer split on
+this x8/x8 pair. `nvidia-smi nvlink -gt d` reports KiB.
+
 ## Speculative decoding (MTP)
 
 Qwen3.8 ships a multi-token-prediction head inside the GGUF, used as a built-in
@@ -125,6 +134,14 @@ Things measured here that are worth knowing:
   five) — if you keep it, bake it into the GGUF once with
   `llama-quantize --extra-output-tensor iq4_ks ... COPY`.
 - **Draft-accepted tokens report logprob 0** on llamAmpere. Only a reporting gap.
+- **DFlash2 (external block-diffusion drafter) loses here** (2026-10-18). It needs the
+  target split by layer or ik's graph split; llamAmpere and mainline crash under tensor
+  split (mainline fix = open PR #27858), and llamAmpere's layer-split path accepts only 3%
+  of drafts. Best result, ik graph split + DFlash2 n5 with `-cd 8192` (the default
+  inherits 262k and OOMs): 65.3 / 49.5 / 42.5 t/s at 33k / 108k / 150k vs 87.6 /
+  78.1 / 72.9 for llamAmpere tensor split + MTP n3. On these prompts it gains only
+  0.3-0.45 tokens per verify step over MTP n3, so even a perfect tensor-split port
+  caps out near +10%.
 
 ## Reasoning effort
 
@@ -149,20 +166,22 @@ ik_llama's behaviour. A top-level field on its own still applies.
 ## Threading
 
 ```
---threads 5
---threads-batch 5
+--threads 2
+--threads-batch 2
 ```
 
-The container gets `cpuset: "0-4"`: five physical cores, one hardware thread
-each, SMT siblings (16-20) left to the host. That is a deliberate choice — see
+The container gets `cpuset: "1-2,17-18"` (since 2026-10-26): two whole
+physical cores with both SMT threads, skipping core 0, which carries kernel
+housekeeping. It was `"0-4"` with 5/5 before; see
+[cpu-topology.md](cpu-topology.md) for the measurements and
 [AUDIT #2](AUDIT.md#2-cpuset-0-4-was-allocating-half-the-intended-cpu) for the
-history. With every layer on the GPUs, the CPU's hot path during generation is
+older history. With every layer on the GPUs, the CPU's hot path during generation is
 **one thread**: measured on both engines, exactly one core at 100% (the thread
 driving the GPUs, sampling, and spin-waiting) and every other thread idle. Wider
 CPU allocations only matter for load-time and prompt-cache work.
 
 ```yaml
-OMP_NUM_THREADS=5
+OMP_NUM_THREADS=2
 OMP_PROC_BIND=false   # NOT close: see AUDIT #12
 ```
 
@@ -254,7 +273,7 @@ curl -s localhost:3060/running | jq '.running[] | {model, state, cmd: (.cmd | sp
 # Both cards should be busy (~90%) during generation
 nvidia-smi dmon -s um
 
-# The server may use all five cores, not one (AUDIT #12)
+# The server may use all four CPUs of its cpuset, not one (AUDIT #12)
 docker exec llama-swap-unified sh -c 'grep Cpus_allowed_list /proc/$(pgrep -f llama-server | head -1)/status'
 
 # Watchdog verdict
