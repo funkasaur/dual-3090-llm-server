@@ -214,9 +214,18 @@ borg create \
     --exclude /run \
     --exclude /tmp \
     --exclude /var/cache \
-    --exclude /var/tmp
+    --exclude /var/tmp \
+    || create_rc=$?
 
-log "Borg create complete."
+# rc 1 is a borg warning, almost always "file changed while we backed it up" on a
+# live log or session file. The archive is written, so carry on to prune, compact
+# and the offsite sync instead of skipping them; rc 2+ is a real error and still
+# fails the run.
+case ${create_rc:-0} in
+    0) log "Borg create complete." ;;
+    1) log "WARNING: borg create finished with warnings (rc 1, see above); archive kept, continuing." ;;
+    *) log "FATAL: borg create failed (rc ${create_rc})."; exit "$create_rc" ;;
+esac
 
 # ---------------------------------------------------------------------------
 # Prune + compact

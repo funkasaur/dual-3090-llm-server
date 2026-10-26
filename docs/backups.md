@@ -267,11 +267,25 @@ problem — but at 11 seconds, it currently is not.
 |---|---|---|
 | Whole Borg repository (encrypted, so the remote holds only ciphertext) | Google Drive via rclone at the end of `backup.sh` (set `RCLONE_DEST`; root uses its own rclone config) | nightly, after the archive (`Offsite sync complete.` in the backup log) |
 | Veeam restore points | RAID array on another machine, Veeam Backup Copy job | after each backup |
+| Veeam chain, monthly | Google Drive through an rclone `crypt` remote (file names and data encrypted); a set counts only after `rclone cryptcheck` matched every file, and the 2 newest complete sets are kept | once a month |
 
 Drive keeps files that `rclone sync` removes in its trash for 30 days. A second
 machine in the same house is off-machine but not off-site; Drive is the only
 off-site copy. Keep the Borg key export and passphrase somewhere other than
 this machine, or the Drive copy cannot be read.
+
+**Google Drive limits worth knowing** (measured 2026-10-18 to 10-21):
+
+- Uploads are capped at **750 GB per account per day**, and the counter resets 24 h after the cap is hit, not at a
+  fixed time. No API shows the counter; estimate it from file creation times (`rclone lsjson -R -M`, `btime`). An
+  upload already running when the cap is hit usually finishes, but not always: a 338 GB file was rejected at 100 %
+  (`403 userRateLimitExceeded`). So a monthly Veeam set stops cleanly at the cap and the next day's run continues.
+- One large file uploads at ~63 MiB/s by default and ~93 MB/s with `--drive-chunk-size 256M` on a 10G link;
+  `--transfers` doesn't help a single file. Drive-to-Drive copies run ~27-35 MiB/s per stream. rclone's `chunker`
+  can't resume an interrupted upload either, and 1 GB pieces were no faster.
+- To move data between two accounts, share the folder and use `--drive-server-side-across-configs`, so nothing
+  crosses your own uplink.
+- Keep the crypt remote's two passwords off this machine as well, or the encrypted copy can't be read.
 
 ---
 

@@ -45,3 +45,7 @@ docker/monitoring/smartlife-exporter/data/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Edit-time backups
+backups/
+*.bak-*

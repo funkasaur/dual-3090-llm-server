@@ -177,3 +177,17 @@ exactly the kind of decision worth getting right once.
 - [Adding Linux Repositories Using Console — Veeam B&R User Guide](https://helpcenter.veeam.com/docs/vbr/userguide/linux_repository_add.html)
 - [Linux Server — Veeam B&R User Guide](https://helpcenter.veeam.com/docs/vbr/userguide/linux_server.html)
 - [Forever Forward Incremental Backup — Veeam B&R User Guide](https://helpcenter.veeam.com/docs/vbr/userguide/incremental_forever_backup.html)
+
+## Job source: mount points, never a device name (2026-10-18)
+
+NVMe device names are not stable across boots. After a reboot `nvme0n1` became the OS disk and `nvme1n1` the
+repository disk (`/mnt/storage`), the reverse of before (the diagrams above show the old names). The job selected
+`Device /dev/nvme1n1`, so it backed up the repository disk into itself and failed four times at 84 %.
+
+Select **mount points** instead (`/`, `/boot`, `/boot/efi`); check with
+`Get-VBRComputerBackupJob -Name '<job>' | % SelectedVolumes` in PowerShell 7 on the VBR server. The first run after
+the change: Success, 452 GB read, a 355 GB full in 6.5 min.
+
+Do **not** remove restore points with `Remove-VBRRestorePoint` on an agent backup: here it deleted the whole local
+chain (a full and three increments), not the one point. Use the console, and only on a point you can afford to lose
+together with its whole chain.
