@@ -61,11 +61,11 @@ configured for ten.
 Generate the correct string rather than typing it:
 
 ```bash
-# All logical CPUs belonging to physical cores 0-4
-for c in 0 1 2 3 4; do
+# All logical CPUs belonging to physical cores 1-2
+for c in 1 2; do
   cat /sys/devices/system/cpu/cpu$c/topology/thread_siblings_list
 done | tr ',' '\n' | sort -n | uniq | paste -sd,
-# 0,1,2,3,4,16,17,18,19,20
+# 1,2,17,18
 ```
 
 ## The layout
@@ -74,20 +74,37 @@ done | tr ',' '\n' | sort -n | uniq | paste -sd,
 
 | Zone | Physical | `cpuset` | Runs |
 |---|---|---|---|
-| Inference | 0-4 | `0-4` (siblings 16-20 left to the host) | `llama-swap` / llamAmpere / `ik-llama-server` |
-| Web & ingress | 5-6 | `5-6,21-22` | `open-webui` |
+| Kernel housekeeping | 0 | nothing pinned (`0,16`) | scheduler softirqs, function-call IPIs |
+| Inference | 1-2 | `1-2,17-18` (both SMT threads) | `llama-swap` / llamAmpere / `ik-llama-server` |
+| Unassigned | 3-4 | nothing pinned (`3-4,19-20`) | free; only unpinned host processes and cron jobs land here |
+| Web & light services | 5-6 | `5-6,21-22` | `open-webui` and other light services |
 | GPU conductor | 7 | `7,23` | GPU hardware interrupts (no containers) |
 
-Five physical cores for inference, one hardware thread each, matching
-`--threads 5` and `--threads-batch 5`. This was `"0-4,16-20"` with
-`--threads-batch 10` until 2026-09-26 ([AUDIT #2](AUDIT.md)). With every layer
-on the GPUs, generation keeps exactly one core busy on both engines (measured),
-so the SMT siblings buy nothing during inference and are better left to the
-host. Watch out for OpenMP binding inside this zone: it can confine the whole
+Two physical cores for inference with both SMT threads each, and
+`--threads 2` / `--threads-batch 2` / `OMP_NUM_THREADS=2` (one per physical
+core). History: `"0-4,16-20"` with `--threads-batch 10` until 2026-09-26
+([AUDIT #2](AUDIT.md)), then `"0-4"` with 5/5 until 2026-10-26. With every
+layer on the GPUs, generation keeps exactly one core busy on both engines
+(measured). The siblings are included so the engine owns whole cores, and
+core 0 is skipped because it carries most kernel housekeeping (since boot it
+had ~3x the function-call IPIs and ~7x the scheduler softirqs of cores 1-4). Watch out for OpenMP binding inside this zone: it can confine the whole
 engine to core 0 ([AUDIT #12](AUDIT.md)).
 
 The web zone sits on the same die as the engine so a request arriving through
 Open WebUI reaches the backend without crossing the fabric.
+
+**Why two cores is enough.** Measured 2026-10-05 over 4.75 days
+of uptime: one llama-server thread accounts for 265,308 s of the process's
+~271,000 s of CPU (it spin-waits on the GPUs, so it reads busy ~65% of
+wall-clock time); the other 49 threads have 200-350 s each, from model load
+and prompt-cache work. Cores 0-4 averaged 8-16% busy because that one thread
+migrates among them. Re-measured 2026-10-26 on llamAmpere (`--threads 5`,
+2.4 days up): main thread 573 s, two `cuda-EvtHandlr` threads 64 s each, the
+five compute threads ~8 s each; cores 0-4 averaged 3 % busy over 7 days (p99
+of 1-minute windows 53-77 %). A 2026-10-19 A/B on the live server found a
+narrow cpuset (`0-1,16-17`) within 0.4 % of the 5-core one at 33k and 108k
+context (`llamampere/cpu-ab-20261019/RESULTS.md`). So the engine moved to two
+cores on 2026-10-26, leaving 3-4 unassigned.
 
 Core 7 handles GPU interrupts and runs nothing else — see
 [irq-pinning.md](irq-pinning.md), including the important caveat that this
@@ -112,20 +129,20 @@ In Compose:
 ```yaml
 services:
   llama-swap:
-    cpuset: "0-4"          # or "0-4,16-20" to include the SMT siblings
+    cpuset: "1-2,17-18"    # cores 1-2 with their SMT siblings
 ```
 
 For a process outside Docker:
 
 ```bash
-taskset -c 0-4,16-20 ./my-inference-binary
+taskset -c 1-2,17-18 ./my-inference-binary
 ```
 
 For a systemd unit:
 
 ```ini
 [Service]
-CPUAffinity=0-4 16-20
+CPUAffinity=1-2 17-18
 ```
 
 ## Verifying it
@@ -144,23 +161,22 @@ grep Cpus_allowed_list /proc/$(pgrep -f llama-server | head -1)/task/*/status | 
 
 # Where the work is landing, live
 htop   # press F2 -> Display options -> enable "Detailed CPU time",
-       # then watch cores 0-4/16-20 during generation
+       # then watch cores 1-2/17-18 during generation
 ```
 
 If load appears on CCD1 during pure generation, something is not pinned.
 
 ## Tuning notes
 
-- **Five cores is a starting point, not a law.** If your models are MoE or you
-  run heavy CPU offload, more cores may help. If you are fully GPU-resident
-  with `-ngl 99`, the CPU is mostly orchestrating and you may do just as well
-  with four, freeing one for the rest of the system.
-- **Do not pin to core 0 if you can avoid it** on systems that route a lot of
-  kernel housekeeping there. Here the inference zone does include core 0,
-  which is a deliberate trade for keeping all five cores contiguous within one
-  L3 pool.
+- **Two cores fits full GPU offload only.** If your models are MoE with
+  experts on the CPU or you run heavy CPU offload, give the engine more cores
+  and raise `--threads` to match. Fully GPU-resident with `-ngl 99`, the CPU is
+  mostly orchestrating: one hot thread plus two small CUDA helper threads.
+- **Do not pin to core 0 if you can avoid it.** The kernel routes a lot of
+  housekeeping there; here core 0 had ~3x the function-call IPIs and ~7x the
+  scheduler softirqs of its neighbors, so the inference zone starts at core 1.
 - **`isolcpus=` is the stronger version of this.** Adding
-  `isolcpus=0-4,16-20 nohz_full=0-4,16-20` to the kernel command line removes
+  `isolcpus=1-2,17-18 nohz_full=1-2,17-18` to the kernel command line removes
   those CPUs from the general scheduler entirely. It reduces jitter further
   but it will *not* move kernel-managed interrupts — see
   [AUDIT #3](AUDIT.md#3-gpu-interrupts-were-the-wrong-thing-to-optimise).

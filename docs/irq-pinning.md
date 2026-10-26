@@ -198,9 +198,9 @@ core that issued the I/O. That binding is created at queue-allocation time and
 is not user-modifiable: `irqbalance` skips these, and a write to
 `smp_affinity` returns an error.
 
-On this machine, `nvme0q1`–`nvme0q5` and `nvme1q1`–`nvme1q5` sit on CPUs 0-4,
-with queues 17-21 on the SMT siblings 16-20. That is the entire inference zone,
-on both drives.
+On this machine every CPU has one queue per drive, so the inference zone
+(`1-2,17-18` since 2026-10-26) carries `nvme0q2`/`q3`/`q18`/`q19` and
+`nvme1q2`/`q3`/`q18`/`q19` — every CPU of the zone, on both drives.
 
 **You cannot move them.** What you can do:
 
@@ -219,9 +219,9 @@ The script now prints this situation on every run rather than implying a
 sterility the hardware does not provide:
 
 ```
---- Interrupts still bound to inference CPUs (0-4,16-20) ---
-  IRQ 54 (nvme1q1) is pinned to CPU 0
-  IRQ 86 (nvme0q1) is pinned to CPU 0
+--- Interrupts still bound to inference CPUs (1-2,17-18) ---
+  IRQ 89 (nvme1q2) on CPU 1 — 1103351 interrupts since boot
+  IRQ 90 (nvme1q3) on CPU 2 — 1048114 interrupts since boot
   ...
 Managed interrupts above cannot be relocated from userspace.
 ```
@@ -260,6 +260,15 @@ means you can pin it.
   hardcode them; discover them from `/proc/interrupts` at runtime, which is
   what the script does.
 - **`irqbalance --banirq` needs the numbers at service start**, so the
-  override file is regenerated on every run.
+  override file is regenerated on every run — but only installed, followed by
+  `systemctl daemon-reload` and an irqbalance restart, when its content changed
+  (in practice: after a reboot or driver reload renumbers the IRQs).
+- **Don't `daemon-reload` on a timer.** With Docker's systemd cgroup driver on
+  cgroup v2, a reload can drop the GPU device access of running containers.
+  Loaded models keep working; the next model load fails with `Failed to
+  initialize NVML: Unknown Error` until the container restarts. Until
+  2026-10-17 the script reloaded every hour. llama-swap also lists the
+  `/dev/nvidia*` nodes under `devices:` as a backstop
+  (`docker/llama-swap/docker-compose.yaml`).
 - **Interrupt counters are cumulative since boot.** A number that looks huge
   may be months of accumulation. Sample twice and subtract if you want a rate.

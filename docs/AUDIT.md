@@ -49,9 +49,8 @@ assuming they are already there.
 **Update 2026-10-07:** the `ConditionPathExistsGlob=/dev/nvidia[0-9]*` gate was itself a boot race. It was
 checked at 11:13:10, `/dev/nvidia0` appeared at 11:13:11, so `nvidia-power-limit` (boot-only) and `optimize-ai`
 were *skipped* and the 270 W cap never applied. The gate is gone from both units; the scripts already wait
-for the driver. **Not yet proven at a boot (as of 2026-10-13):** the machine has not rebooted since the change.
-Proof is the next boot: `systemctl show nvidia-power-limit -p ConditionResult -p Result` says `yes`/`success`
-and `nvidia-smi -q -d POWER` shows the cap without a manual step.
+for the driver. **Proven at the 2026-10-20 boot:** `systemctl show nvidia-power-limit -p ConditionResult -p Result` says
+`yes`/`success` and `nvidia-smi` shows the 270 W cap on both cards with no manual step.
 
 There is a second-order problem: IRQ affinity is not sticky. Reloading the
 NVIDIA module resets it, with no failed unit and no log line. `optimize-ai.timer`
@@ -380,7 +379,7 @@ The prose description of this build, checked against the machine:
 | GPU IRQs pinned to **core 5** (threads 5, 17) | Script pins to **core 7** (threads 7, 23) |
 | Inference on "cores 0-4 (**threads 12-16**)" | Threads **0-4, 16-20** |
 | Engine is `ik-llama-server` | `llama-swap` **fronting** `ik-llama-server` |
-| Backups via **Veeam** | Both run. Borg nightly at 03:00 via systemd (verified succeeding); Veeam image-level from a Windows B&R server (see [#10](#9-the-veeam-job-had-not-run-in-three-days)) |
+| Backups via **Veeam** | Both run. Borg nightly at 03:00 via systemd (verified succeeding); Veeam image-level from a Windows B&R server (see [#9](#9-the-veeam-job-had-not-run-in-three-days)) |
 | "**1350W limit** enforced via `nvidia-smi` power caps" | 1350W is the UPS's rated output (`upsAdvanceIdentLoadPower`). The `nvidia-smi` cap is **270W per card**. Two unrelated numbers |
 | `--split-mode graph`: "both cards calculate **identical layers** simultaneously, pooling 48GB" | Self-contradictory — duplicating layers would halve usable VRAM, not pool it. Graph mode splits the compute graph across devices |
 | `cloudflared` on CCD0 ingress zone | Runs on CCD1 (`8-15,24-31`), with a comment reading `# Strictly on CCD0` |
@@ -519,7 +518,7 @@ Options, in rough order of how well they fit a fixed-size repository:
    625 GB full pruned, free space goes from 405 GB to ~1 TB, which is
    comfortably enough to build a synthetic full.
 3. **Move the repository off this box**, which also fixes
-   [10a](#9a-both-backup-systems-share-one-failure-domain).
+   [9a](#9a-both-backup-systems-share-one-failure-domain).
 4. Add capacity — the drive is already 1.8 TB and 77% full, so this only
    defers the question.
 

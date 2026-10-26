@@ -24,8 +24,12 @@ set -euo pipefail
 # as the inference cores so interrupt data stays in the same L3 pool.
 CONDUCTOR_CORE="${CONDUCTOR_CORE:-7}"
 
-# Cores the inference engine owns. Used only for the advisory report at the end.
-INFERENCE_CPULIST="${INFERENCE_CPULIST:-0-4,16-20}"
+# Cores the inference engine owns: must match the llama-swap compose cpuset
+# (docker/llama-swap/docker-compose.yaml). Used only for the advisory report at the end.
+# CPU 0/16 is skipped on purpose: CPU 0 carries most kernel housekeeping
+# (scheduler softirqs, function-call IPIs) and would interrupt llama-server's
+# main thread, which does nearly all of its CPU work with full GPU offload.
+INFERENCE_CPULIST="${INFERENCE_CPULIST:-1-2,17-18}"
 
 # CPUs irqbalance must never assign interrupts to (all of CCD0 + SMT siblings).
 BANNED_CPULIST="${BANNED_CPULIST:-0-7,16-23}"
@@ -97,8 +101,18 @@ for irq in "${IRQS[@]}"; do
     banirq_args+=" --banirq=${irq}"
 done
 
-install -d -m 0755 /etc/systemd/system/irqbalance.service.d
-cat > /etc/systemd/system/irqbalance.service.d/override.conf <<EOF
+# Only rewrite the override, daemon-reload and restart irqbalance when the
+# content changed. An unconditional hourly `systemctl daemon-reload` strips GPU
+# device access from running containers (Docker systemd cgroup driver, cgroup
+# v2): already-loaded models keep working, but every new llama-server load then
+# fails with "Failed to initialize NVML: Unknown Error" until the container is
+# restarted (2026-10-17, 38 failed Qwen loads 06:00-07:35). The content only
+# changes when the GPU IRQ numbers or the tunables change.
+OVERRIDE=/etc/systemd/system/irqbalance.service.d/override.conf
+install -d -m 0755 "$(dirname "$OVERRIDE")"
+override_new="$(mktemp)"
+trap 'rm -f "$override_new"' EXIT
+cat > "$override_new" <<EOF
 # Managed by optimize-ai.sh — regenerated on every run. Do not edit by hand.
 [Service]
 Environment="IRQBALANCE_BANNED_CPULIST=${BANNED_CPULIST}"
@@ -107,12 +121,27 @@ EOF
 
 log "irqbalance: banned from CPUs ${BANNED_CPULIST}; GPU IRQs excluded from balancing."
 
-systemctl daemon-reload
+irqbalance_wanted=0
 if systemctl is-enabled --quiet irqbalance 2>/dev/null || systemctl is-active --quiet irqbalance; then
-    systemctl restart irqbalance
-    log "irqbalance restarted."
+    irqbalance_wanted=1
+fi
+
+if cmp -s "$override_new" "$OVERRIDE"; then
+    log "irqbalance override unchanged; no daemon-reload."
+    if (( irqbalance_wanted )) && ! systemctl is-active --quiet irqbalance; then
+        systemctl start irqbalance
+        log "irqbalance started."
+    fi
 else
-    warn "irqbalance is not enabled/active — the ban list will apply if you start it later."
+    install -m 0644 "$override_new" "$OVERRIDE"
+    systemctl daemon-reload
+    log "irqbalance override changed; daemon-reload done."
+    if (( irqbalance_wanted )); then
+        systemctl restart irqbalance
+        log "irqbalance restarted."
+    else
+        warn "irqbalance is not enabled/active — the ban list will apply if you start it later."
+    fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -204,10 +233,13 @@ log "Managed interrupts above cannot be relocated from userspace."
 log "-------------------------------------------------------------"
 
 log ""
-log "Suggested placement for this topology:"
-log "  Inference engine   : cpuset '${INFERENCE_CPULIST}', OMP_NUM_THREADS=5"
-log "  Web / ingress      : cpuset '5-6,21-22'"
-log "  Databases / RAG    : cpuset '8-15,24-31'"
+log "Placement on this host (CPU n and n+16 are SMT siblings of one core):"
+log "  Kernel housekeeping : 0,16 (nothing pinned)"
+log "  Inference engine    : cpuset '${INFERENCE_CPULIST}', --threads 2, OMP_NUM_THREADS=2"
+log "  Unassigned          : 3-4,19-20"
+log "  Chat apps           : cpuset '5-6,21-22' (open-webui, telegram bot)"
+log "  GPU IRQs            : ${CONDUCTOR_THREADS[*]} (conductor core ${CONDUCTOR_CORE}; nothing else pinned)"
+log "  General services    : cpuset '8-15,24-31' (CCD1: databases, RAG, proxies, exporters)"
 
 if (( pin_failures > 0 )); then
     warn "${pin_failures} IRQ(s) could not be pinned — see messages above."

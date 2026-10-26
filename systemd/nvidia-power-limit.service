@@ -6,7 +6,7 @@ After=nvidia-persistenced.service systemd-modules-load.service
 # No ConditionPathExistsGlob=/dev/nvidia[0-9]*: on the 2026-10-07 boot the
 # check ran at 11:13:10 and /dev/nvidia0 appeared at 11:13:11, so the unit was
 # skipped and the boot-only power cap never applied. The script waits for
-# the driver itself. Not yet exercised by a real reboot (as of 2026-10-13).
+# the driver itself.
 
 [Service]
 Type=oneshot
