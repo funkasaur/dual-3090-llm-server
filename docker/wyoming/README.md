@@ -32,6 +32,11 @@ recite the vocabulary; a transcript holding three or more vocabulary terms as a 
 
 ## Text-to-speech
 
+The TTS bridge needs a qwentts.cpp server running on the host first: build
+[qwentts.cpp](https://github.com/ServeurpersoCom/qwentts.cpp) with CUDA, put the Qwen3-TTS 0.6B Base talker and the
+12 Hz tokenizer GGUFs in its `models/`, then install [`systemd/qwentts-server.service`](systemd/qwentts-server.service)
+as a user unit and start it before `docker compose up -d`. Without it the bridge starts but every synthesis fails.
+
 `qwen3-tts/server.py` is a Wyoming bridge to qwentts.cpp's HTTP server. It speaks every reply in one cloned voice: the
 reference clip in `qwen3-tts/voice/` is synthetic, made once by the Qwen3-TTS 1.7B VoiceDesign model from the text in
 `steady-instruct.txt` (seed 15). The bridge registers the clip at startup and again after a server restart (the server

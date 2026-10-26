@@ -1,0 +1,16 @@
+# Qwen3-TTS server (qwentts.cpp 5916bf7, GGUF 0.6B Base Q8_0) behind wyoming-qwen3-tts (:10202). User unit:
+# install to ~/.config/systemd/user/ and `systemctl --user enable --now qwentts-server`. Set QWENTTS to your
+# qwentts.cpp checkout (built with CUDA) holding the two GGUFs in models/. One GPU, ~2.4 GB VRAM.
+[Unit]
+Description=Qwen3-TTS server (qwentts.cpp) on 127.0.0.1:8099
+
+[Service]
+Environment=QWENTTS=%h/qwentts.cpp
+ExecStart=/bin/sh -c 'exec "$QWENTTS/build/tts-server" --model "$QWENTTS/models/qwen-talker-0.6b-base-Q8_0.gguf" --codec "$QWENTTS/models/qwen-tokenizer-12hz-Q8_0.gguf" --device CUDA1 --host 127.0.0.1 --port 8099 --lang English'
+# Free cores on this layout (see docs/cpu-topology.md); keep it off the inference cores 1-2,17-18.
+CPUAffinity=3-4 19-20
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

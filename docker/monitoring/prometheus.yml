@@ -13,8 +13,8 @@ global:
 scrape_configs:
   - job_name: 'node'
     static_configs:
-      # node-exporter runs on the host network; 192.168.32.1 is the ai-net gateway (= this
-      # host). Find yours with: docker network inspect ai-net -f '{{(index .IPAM.Config 0).Gateway}}'
+      # node-exporter runs on the host network, so scrape it at the ai-net gateway (= this host).
+      # REPLACE 192.168.32.1 with yours: docker network inspect ai-net -f '{{(index .IPAM.Config 0).Gateway}}'
       - targets: ['192.168.32.1:9100']
     relabel_configs:
       - target_label: instance  # keep the old label so alerts and dashboards still match

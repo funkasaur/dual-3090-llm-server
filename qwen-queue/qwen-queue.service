@@ -3,6 +3,7 @@ Description=qwen-queue: bounded background queue for local Qwen (one job at a ti
 After=network-online.target
 
 [Service]
+# Path assumes this repo is cloned to ~/dual-3090-llm-server; change it to your checkout.
 ExecStart=/usr/bin/python3 %h/dual-3090-llm-server/qwen-queue/qwenq.py worker
 Restart=always
 RestartSec=10

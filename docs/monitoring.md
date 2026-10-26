@@ -189,9 +189,11 @@ sudo systemctl disable --now gpu-fan-curve     # fans straight back to the drive
 
 ## Alerting
 
-**Grafana owns alerting on this build.** The live rules (52 on 2026-10-07: GPU, CCD, UPS, inference,
+**Grafana owns alerting on this build.** The live rules (over 100 here: GPU, CCD, UPS, inference,
 watchdog, backups, agents, home power) live in Grafana's database and
-deliver to Telegram; [`grafana/alert-rules.json`](../grafana/alert-rules.json) is the exported copy.
+deliver to Telegram. [`grafana/alert-rules.json`](../grafana/alert-rules.json) is a 36-rule public subset:
+GPU, CPU, UPS, inference, watchdog, home power, disks and NVMe; the rest watch machines and services that
+are not part of this repo.
 Prometheus loads **no** rules: the `rule_files:` stanza and the `gpu-alert.yaml` mount are commented out
 on purpose, so `/rules` in the Prometheus UI is empty and that is expected.
 [`docker/monitoring/gpu-alert.yaml`](../docker/monitoring/gpu-alert.yaml) is kept as a Prometheus-format

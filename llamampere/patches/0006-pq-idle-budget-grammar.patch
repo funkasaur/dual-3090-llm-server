@@ -2,7 +2,7 @@ From 14e3fc6120f1d89497919210d84cb28576d99dd4 Mon Sep 17 00:00:00 2001
 From: Funkasaur <150561769+funkasaur@users.noreply.github.com>
 Date: Mon, 19 Oct 2026 12:01:00 -0400
 Subject: [PATCH] 0006: exact p/q verify while reasoning budget / lazy grammar
- are idle (UNTESTED)
+ are idle
 
 Per verify position, use p/q when the reasoning budget is not forcing and a lazy grammar
 still awaits its trigger; id-match otherwise. Drafter takes argmax when the target will

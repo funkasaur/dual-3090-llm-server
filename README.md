@@ -123,7 +123,7 @@ docker inspect -f '{{.Name}} {{.HostConfig.CpusetCpus}}' $(docker ps -q)
 `llama-swap` is the router: it exposes one OpenAI-compatible endpoint, launches
 the right backend process on demand, and unloads it after a TTL. The main model
 runs on [llamAmpere](llamampere/README.md), a llama.cpp fork with Ampere-specific
-attention kernels, built here with two local patches; every other model runs on
+attention kernels, built here with five local patches; every other model runs on
 `ik-llama-server`, which ships in the llama-swap image and remains a one-edit
 fallback for the main model.
 
