@@ -44,6 +44,13 @@ llamAmpere's by ~0.05 ms (35 ms to 41 ms). That growth is attention reading the
 KV cache, which is what llamAmpere's fused kernels target. An agent that spends
 most of its turns at 100k+ context is exactly where it shows.
 
+Those are the numbers measured for the switch (2026-09-25/26). The live build
+has since moved to v0.5.2 (2026-10-11), then gained the CUDA graph cache cap
+(patch 0003) and `--tensor-split 50,50` (2026-10-13), then v0.5.5 and exact p/q
+verification (patch 0006, live 2026-10-19), and now decodes about 100 tok/s: 101.5 / 92.1 tok/s at 33k / 108k in the replayed-request benchmark,
+and a median of 91-106 tok/s across context depths in six days of real
+requests (table in the [README](../README.md#inference)).
+
 Before switching, two things were checked, not assumed:
 
 - **Numerical equivalence.** Identical token ids fed to both engines, the

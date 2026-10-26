@@ -131,14 +131,21 @@ Both cards are driven with tensor parallelism (`--split-mode tensor`) over the
 NVLink bridge, pooling 48GB of VRAM so a 27B dense model at Q8 fits with a
 262k context.
 
-Measured on this machine, Qwen3.8-27B at Q8_0, real agent requests:
+Measured on this machine, Qwen3.8-27B at Q8_0 with MTP speculative decoding,
+from the llama-swap request log over six days of real use (2026-10-20 to 10-26,
+472 requests with at least 16 output tokens):
 
-| Context | Generation | vs the previous ik_llama setup |
-|---|---|---|
-| 33k | **64-68 tok/s** | 43-48 |
-| 108k | **57 tok/s** | 35 |
-| 184k | **60 tok/s** | 31 |
-| ~240k | **50 tok/s** | 24 |
+| Context | Generation, median | 1 in 10 requests above | Requests | Previous ik_llama setup |
+|---|---|---|---|---|
+| 0-8k | **98 tok/s** | 119 | 261 | |
+| 8-32k | **106 tok/s** | 131 | 130 | 43-48 (33k) |
+| 32-64k | **100 tok/s** | 118 | 24 | |
+| 64-128k | **91 tok/s** | 112 | 38 | 35 (108k) |
+| 128k+ | **93 tok/s** | 112 | 19 | 24-31 (184-240k) |
+
+Medians are read from a histogram with 90/100/120 tok/s bucket edges, so they
+are good to about ±5 tok/s. A replayed-request benchmark of the same build
+(2026-10-19) gives 101.5 tok/s at 33k, 92.1 at 108k and 103.1 at 33k with tools.
 
 Prompt processing: ~1,700 tok/s at 33k, ~1,040 tok/s at 184k.
 

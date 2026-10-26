@@ -24,6 +24,10 @@ Measured 2026-09-25/26 on the same GGUF, same sampling, replaying real captured 
 | 184k | 30.5-32.1 | 59.5-60.6 |
 | ~240k | 23.5-24.0 | 50.2-51.0 |
 
+That table is the 2026-09 switch decision. The live build (cand-0006, since 2026-10-19) decodes about
+100 tok/s: median 91-106 tok/s across context depths over six days of real requests; see the
+[top-level README](../README.md#inference).
+
 Prefill is +29-40%. Both engines use one CPU core while decoding; llamAmpere keeps both GPUs ~90% busy
 (ik: 72% / 85%). The gain is per-verification-pass cost at depth: ik's pass grows ~0.27 ms per 1k tokens of
 context, llamAmpere's ~0.05 ms.
