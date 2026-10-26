@@ -54,20 +54,26 @@ most useful file here.
 | Cooling | Arctic Liquid Freezer III Pro 420, GPUs repasted |
 | PSU | Corsair HX1500i (ATX 3.1) |
 | UPS | CyberPower OL1500RTXL2U, RMCARD205 management card |
-| Networking | Onboard Realtek Killer E3000 2.5GbE (RJ45), linked at 2500Mb/s |
+| Networking | Intel 82599 10GbE SFP+ (`ixgbe`) on an M.2 M-key adapter card in the chipset M.2 slot (PCIe 2.0 x4, 5 GT/s), 10GBASE-T copper SFP+ module, linked at 10000 Mb/s; 9.3-9.46 Gb/s iperf3. Onboard Killer E3000 2.5GbE kept as fallback |
 | Chassis | NZXT H9 Flow (2025) |
-| OS | Ubuntu 24.04.4 LTS, kernel 6.8 |
+| OS | Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic (GA kernel, not HWE) |
 
 > **No expansion slots remain.** Two triple-slot ROG Strix 3090s bridged with
 > NVLink physically occupy everything, and AM4 only has 16 CPU PCIe lanes to
 > begin with — both cards run at **x8** (`current_link_width: 8`, max 16) once
-> the second slot is populated. There is nowhere to put a 10GbE NIC, so the
-> box uses the onboard 2.5GbE. In practice that is not the bottleneck: model
-> weights live on local NVMe, and 2.5Gb is ample for API traffic and the
-> Cloudflare tunnel.
+> the second slot is populated. The 10GbE NIC therefore lives in an **M.2 slot**:
+> an Intel 82599 SFP+ card on an M.2 M-key adapter, in the chipset-attached M.2
+> slot (PCIe 2.0 x4 is ~16 Gb/s, enough for one 10G port). The card sits outside
+> the case on a short M.2 extension cable and takes SATA power. `ixgbe` needs
+> `allow_unsupported_sfp=1` for third-party modules. Measured 9.3-9.46 Gb/s with
+> iperf3 and 18.4 Gb/s bidirectional, no drops.
 >
-> If you are planning a similar build and want 10GbE, budget for it on a
-> platform with more lanes (Threadripper / EPYC / SP3) or accept a single GPU.
+> A USB-C 5GbE adapter (Realtek RTL8157) came first and was retired: under
+> sustained two-way load it hung with carrier up and no traffic, on both the
+> stock `cdc_ncm` driver and Realtek's `r8152` DKMS driver.
+>
+> If you are planning a similar build and want 10GbE with both PCIe slots full,
+> an M.2 NIC costs you one NVMe slot and works.
 
 ---
 
