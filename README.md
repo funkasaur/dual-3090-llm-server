@@ -56,7 +56,7 @@ most useful file here.
 | Cooling | Arctic Liquid Freezer III Pro 420, GPUs repasted |
 | PSU | Corsair HX1500i (ATX 3.1) |
 | UPS | CyberPower OL1500RTXL2U, RMCARD205 management card |
-| Networking | Intel 82599 10GbE SFP+ (`ixgbe`) on an M.2 M-key adapter card in the chipset M.2 slot (PCIe 2.0 x4, 5 GT/s), 10GBASE-T copper SFP+ module, linked at 10000 Mb/s; 9.3-9.46 Gb/s iperf3. Onboard Killer E3000 2.5GbE kept as fallback |
+| Networking | Intel 82599 10GbE SFP+ (`ixgbe`) on an M.2 M-key adapter card in the chipset M.2 slot (PCIe 2.0 x4, 5 GT/s), 10GBASE-T copper SFP+ module (fiber planned), linked at 10000 Mb/s; 9.3-9.46 Gb/s iperf3. Onboard Killer E3000 2.5GbE kept as fallback |
 | Chassis | NZXT H9 Flow (2025) |
 | OS | Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic (GA kernel, not HWE) |
 
@@ -73,6 +73,13 @@ most useful file here.
 > A USB-C 5GbE adapter (Realtek RTL8157) came first and was retired: under
 > sustained two-way load it hung with carrier up and no traffic, on both the
 > stock `cdc_ncm` driver and Realtek's `r8152` DKMS driver.
+>
+> **Link flaps, 2026-10-26.** Two separate faults on the copper path: a Cat6
+> keystone coupler caused CRC errors (proven), and one brand of 10GBASE-T SFP+
+> module dropped the link repeatedly (likely; a different model has had no
+> drops since). Planned: OM4 fiber with 10GBASE-SR modules. A Grafana alert
+> fires on more than 5 link drops in 10 minutes. The NIC's 32 queue interrupts
+> all land on CCD1 (8-15, 24-31).
 >
 > If you are planning a similar build and want 10GbE with both PCIe slots full,
 > an M.2 NIC costs you one NVMe slot and works.
@@ -91,7 +98,7 @@ CCD0 — cores 0-7  (L3 pool #0)        CCD1 — cores 8-15 (L3 pool #1)
 ├─ 0    kernel housekeeping (+SMT 16) └─ 8-15 everything else (+SMT 24-31)
 ├─ 1-2  inference  (+SMT 17-18)          postgres, qdrant, embeddings,
 ├─ 3-4  unassigned (+SMT 19-20)          tika, agents, monitoring, voice
-├─ 5-6  web/ingress (+SMT 21-22)
+├─ 5-6  web UI + light services (+SMT 21-22)
 └─ 7    GPU interrupts (+SMT 23)
 ```
 

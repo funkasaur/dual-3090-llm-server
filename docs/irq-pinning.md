@@ -101,6 +101,10 @@ $ grep -iE 'nvidia|nvme|enp' /proc/interrupts   # summed across all CPUs
 167: total=0            nvidia      effective=18
 ```
 
+(Measured on the onboard 2.5GbE NIC, `enp42s0`. Since 2026-10-20 the main link is an Intel 82599
+10GbE card, `enp34s0`, with 32 TxRx queue interrupts plus one admin vector; on 2026-10-26 every one of
+them had its effective CPU on CCD1 (8-15, 24-31), none on the inference or GPU cores.)
+
 Two conclusions, neither of them the expected one:
 
 1. **The GPU interrupts barely fire.** Thirteen, and zero. NVIDIA's driver

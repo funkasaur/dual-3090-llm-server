@@ -5,9 +5,10 @@ A personal research project that runs on this server: an LLM agent plus determin
 It trades **on paper only**. The code is in a separate private repository; this page describes what it does,
 how it is built, and what it has found.
 
-Status as of October 2026: the forecasting and scoring pipeline runs every day; the LLM research loop was
-retired after it lost to the market (below); three paper simulations of liquidity-providing strategies are
-collecting data for a pre-registered verdict.
+Status as of 2026-10-26: the forecasting and scoring pipeline runs every day; the LLM research loop was
+retired after it lost to the market (below); two paper simulations of maker (resting-order) strategies are
+collecting data for a pre-registered verdict. A third, liquidity-reward farming, was retired on 2026-10-22: the
+capital it would need is far beyond what this project will ever risk, and it trades no real money.
 
 ## Why this project
 
@@ -33,7 +34,7 @@ Python with tests:
 | Part | What it does |
 |---|---|
 | MCP server (Python, 25 typed tools) | market data, research bundles, quant engine, risk gates, paper execution, scoring |
-| Market-data collector | read-only WebSocket feed keeps ~1,300 order books live; records quotes for the simulations |
+| Market-data collector | read-only WebSocket feed keeps ~600 order books live (~1,300 before the reward series were dropped 2026-10-25); records quotes for the simulations |
 | Agent runtime | [Hermes Agent](https://github.com/NousResearch/hermes-agent) on a schedule, using the Qwen3.8-27B model served from this box ([inference.md](inference.md)) |
 | Storage | Postgres (exact decimals for money), Qdrant for retrieving past research notes and lessons |
 | Scheduled jobs | settle and score (hourly), statistical baseline forecasts (twice daily), a daily digest to my phone |
@@ -81,8 +82,9 @@ sports game winners, rain, gas prices, CPI releases, speech "mention" markets, E
 6. **The only leads are on the maker side, and they are small.** Resting orders on one side of some sports
    games earned about +2c per contract historically (90% range above zero, but shrinking over the year).
    Favorite-side quoting looks negative so far. Liquidity rewards look large until you count
-   the cost of being picked off. These now run as paper simulations with the verdict rule written down in
-   advance (about 30 settlement days).
+   the cost of being picked off and the capital they tie up (that simulation was retired 2026-10-22). The
+   maker strategies run as paper simulations with the verdict rule written down in advance (about 30
+   settlement days); no verdict yet.
 7. **Settlement details decide everything.** The climate day runs midnight to midnight local standard time,
    so the "daily high" can be set at 1 a.m. Some stations send an afternoon report with the day so far,
    which was once cached as the final and threw the calibration off by 17-28 degrees. Fixes include the stored data,

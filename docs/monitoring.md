@@ -13,10 +13,11 @@ regress after that config change?*
 | Prometheus | 2090 | Stores everything (alert rules run in Grafana) |
 | Grafana | 2000 | Dashboards and alerting (Telegram) |
 | `node-exporter` | 9100 | CPU per core, RAM, disk I/O, per-CCD temps |
-| `dcgm-exporter` | 2400 | VRAM, utilisation, per-GPU watts, throttle reasons |
+| `dcgm-exporter` | 2400 | VRAM, utilization, per-GPU watts, throttle reasons |
 | `snmp-exporter` | 9116 | UPS load, battery, runtime |
 | `llamaswap-exporter` | 9105 | tokens/sec, cache hits, active model |
 | `smartctl-exporter` | 9633 | NVMe wear, spare, media errors, temperature |
+| `sfp-dom` | (textfile) | 10G SFP+ module temperature and DOM via `ethtool -m` |
 
 All of it pinned to CCD1. Monitoring that perturbs the thing it measures is
 worse than no monitoring.
