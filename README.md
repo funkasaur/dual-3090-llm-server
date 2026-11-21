@@ -35,7 +35,7 @@ most useful file here.
 | [`docs/AUDIT.md`](docs/AUDIT.md) | **Findings from auditing this setup against the live machine** |
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
 | [`llamampere/`](llamampere/README.md) | Pinned llamAmpere build + local patches for the main model |
-| [`qwen-queue/`](qwen-queue/README.md) | Idle-only background queue for Qwen jobs |
+| [`qwen-queue/`](qwen-queue/README.md) | Idle-only background queue for Qwen jobs (moved to [codasaur-queue](https://github.com/funkasaur/codasaur-queue)) |
 | [`drivers/ixgbe-sfp/`](drivers/ixgbe-sfp/) | Setup + rollback for the M.2 Intel 82599 10GbE SFP+ card |
 | [`systemd/`](systemd/) | Units for the above |
 | [`docker/`](docker/) | Compose files for the whole stack, secrets parameterized |
@@ -197,8 +197,8 @@ All of it is in [`docker/`](docker/), secrets parameterized, one directory per u
 - **Backups** — two layers: Borg nightly with Postgres/Qdrant pre-hooks, plus
   Veeam image-level backup with guest freeze/thaw scripts; the Borg repository is
   synced to Google Drive nightly and Veeam copies to a RAID on another machine
-- **Background Qwen work** — [`qwen-queue/`](qwen-queue/): one job at a time, only when the main model is
-  loaded and idle, with an hourly budget
+- **Background Qwen work** — [codasaur-queue](https://github.com/funkasaur/codasaur-queue) (was `qwen-queue/`): one
+  job at a time, only when the main model is loaded and idle, with an hourly budget, run caps and GPU-temperature/UPS holds
 - **GPU cooling** — a VRAM-driven fan curve (`scripts/gpu-fan-curve.py`) on 2 s temperature sampling, because
   the stacked cards' memory runs far hotter than the core the driver's curve follows (see docs/monitoring.md)
 - **Home Assistant voice** — [`docker/wyoming/`](docker/wyoming/): Qwen3-ASR speech-to-text on CPU and Qwen3-TTS

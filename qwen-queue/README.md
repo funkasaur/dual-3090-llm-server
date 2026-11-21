@@ -1,16 +1,11 @@
-# qwen-queue
+# qwen-queue (moved)
 
-Bounded queue for background work on the local Qwen (llama-swap). Design and rules: the docstring at the top
-of [`qwenq.py`](qwenq.py). Worker: `systemctl --user status qwen-queue` (unit symlinked from this folder).
-CLI: `~/bin/qwenq` (symlink). DB: `~/.local/share/qwen-queue/queue.db`.
+The background queue for the local Qwen now lives in its own repository:
+[funkasaur/codasaur-queue](https://github.com/funkasaur/codasaur-queue) (CLI `cdq`, settings `CDQ_*`).
 
-    qwenq submit --kind test --prompt "Say hi" --wait     # or a JSON chat body on stdin / --file
-    qwenq list | get <id> | cancel <id> | stats [--hours 24]
-    journalctl --user -u qwen-queue -f
+It does what the old copy here did (one job at a time, only when the model is already loaded and idle, an hourly
+budget, deadlines, cancel) plus what was added since 2026-10-26: GPU-temperature and UPS holds, per-job run caps and
+Prometheus metrics. Live callers (agent jobs, Open WebUI, Home Assistant voice)
+still bypass it.
 
-Tested 2026-09-30: completes a job; waits while live callers use the model (106 s behind a live agent run); never loads
-a model that isn't already loaded (a Gemma job expired instead of evicting Qwen); cancel mid-run frees the
-slot in ~2 s; a deadline stops a running job; a job waiting on an unloaded model doesn't block others.
-Live callers (agent jobs, Open WebUI, Home Assistant voice) bypass the queue. As of 2026-10-26 the nightly
-check's explanation is the only regular job kind; an earlier shadow-ensemble experiment (~10k jobs) stopped
-2026-10-07.
+The 2026-10-26 version (`qwenq.py`, `qwen-queue.service`) is in this repository's history.
