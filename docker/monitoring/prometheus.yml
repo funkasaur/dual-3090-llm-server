@@ -19,10 +19,21 @@ scrape_configs:
     relabel_configs:
       - target_label: instance  # keep the old label so alerts and dashboards still match
         replacement: 'node-exporter:9100'
+    metric_relabel_configs:
+      # Noise trim 2026-11-15: node_systemd_unit_state is every unit x 5 states (6.8k series here, used by no
+      # rule or dashboard). Keep active + failed only.
+      - source_labels: [__name__, state]
+        regex: 'node_systemd_unit_state;(activating|deactivating|inactive)'
+        action: drop
 
   - job_name: 'dcgm'
     static_configs:
       - targets: ['dcgm-exporter:9400']  # Monitor GPU VRAM/Temp
+    # Shared with a standby Prometheus? Scrape LAN host ports instead (e.g. '192.0.2.26:2400') and keep the
+    # old label, so history, dashboards and rules carry on:
+    # relabel_configs:
+    #   - target_label: instance
+    #     replacement: 'dcgm-exporter:9400'
 
   - job_name: 'cyberpower_ups'
     static_configs:

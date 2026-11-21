@@ -199,6 +199,22 @@ sudo systemctl daemon-reload && sudo systemctl enable --now gpu-fan-curve.servic
 sudo systemctl disable --now gpu-fan-curve     # fans straight back to the driver
 ```
 
+## Standby monitor (2026-11-15)
+
+Grafana and Prometheus run on this server, so they go quiet with it. A second Prometheus + Grafana on a small
+always-on machine scrapes the same targets and takes over alerting when this one dies:
+- One `prometheus.yml` for both, so every target is a LAN address both can reach: this server's exporters are
+  published on its LAN IP only (node 9100, dcgm 2400, smartctl 9633, cadvisor 8088; commented examples in
+  `docker/monitoring/`) with `instance` relabelled to the old Docker names, so history and rules carry on.
+  Jobs only one side runs go in `scrape_config_files: [/etc/prometheus/extra/*.yml]`. A timer on the standby
+  pulls the file, validates it with `promtool`, reloads, and rolls back on failure.
+- The standby Grafana is a copy of this one with every rule **paused**. A watchdog un-pauses them after 3 min of
+  failed health checks here (`/api/health` plus fresh rule evaluations) and pauses them again after 5 healthy
+  minutes, with a notice each way. A nightly sync copies rules, dashboards, policies, templates and mute timings
+  (never contact points). Live failover test passed 2026-11-15.
+- Code: [funkasaur/grafana-standby](https://github.com/funkasaur/grafana-standby).
+- Noise trim (both sides): `node_systemd_unit_state` keeps active + failed only (in `prometheus.yml`).
+
 ## Alerting
 
 **Grafana owns alerting on this build.** The live rules (over 100 here: GPU, CCD, UPS, inference,

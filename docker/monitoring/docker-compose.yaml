@@ -162,6 +162,9 @@ services:
     mem_limit: 128m
     command:
       - '--smartctl.interval=300s'
+    # For a second (standby) Prometheus on another machine, publish on the LAN IP only (see docs/monitoring.md):
+    # ports:
+    #   - "192.0.2.26:9633:9633"
     networks:
       - ai-net
 
@@ -180,6 +183,9 @@ services:
       - '--housekeeping_interval=15s'
       - '--store_container_labels=false'
       - '--disable_metrics=advtcp,cpu_topology,cpuset,disk,hugetlb,memory_numa,percpu,perf_event,process,referenced_memory,resctrl,sched,tcp,udp'
+    # For a standby Prometheus: LAN IP only, since the UI has no auth.
+    # ports:
+    #   - "192.0.2.26:8088:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
