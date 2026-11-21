@@ -3,7 +3,7 @@
 # Wyoming has no auth, so ports bind to the LAN IP only. CCD1 like the other general services.
 services:
   wyoming-whisper:
-    image: rhasspy/wyoming-whisper:latest
+    image: rhasspy/wyoming-whisper:3.9.1
     container_name: wyoming-whisper
     cpuset: "8-15,24-31"
     restart: unless-stopped
@@ -15,7 +15,7 @@ services:
       - "192.0.2.26:10300:10300"
 
   wyoming-piper:
-    image: rhasspy/wyoming-piper:latest
+    image: rhasspy/wyoming-piper:2.5.4
     container_name: wyoming-piper
     cpuset: "8-15,24-31"
     restart: unless-stopped

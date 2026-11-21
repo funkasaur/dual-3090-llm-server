@@ -100,7 +100,7 @@ services:
 
   # 5. UPS Metrics
   snmp-exporter:
-    image: prom/snmp-exporter:latest
+    image: prom/snmp-exporter:v0.31.0
     container_name: snmp-exporter
     cpuset: "8-15,24-31" # Strictly on CCD1
     ports:
