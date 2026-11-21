@@ -12,7 +12,7 @@ regress after that config change?*
 |---|---|---|
 | Prometheus | 2090 | Stores everything (alert rules run in Grafana) |
 | Grafana | 2000 | Dashboards and alerting (Telegram) |
-| `node-exporter` | 9100 | CPU per core, RAM, disk I/O, per-CCD temps |
+| `node-exporter` | 9100 | CPU per core, RAM, disk I/O, per-CCD temps; since 2026-11-15 also processes, tcpstat, interrupts (`--path.procfs=/host/proc`, because Docker masks `/proc/interrupts` in containers; ~5k extra series) |
 | `dcgm-exporter` | 2400 | VRAM, utilization, per-GPU watts, throttle reasons |
 | `snmp-exporter` | 9116 | UPS load, battery, runtime |
 | `llamaswap-exporter` | 9105 | tokens/sec, cache hits, active model |

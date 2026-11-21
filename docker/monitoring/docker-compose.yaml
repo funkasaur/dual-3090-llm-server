@@ -52,6 +52,12 @@ services:
     network_mode: host
     command:
       - '--path.rootfs=/host'
+      # Node Exporter Full panels (processes, PIDs/threads, TCP states, IRQ detail), 2026-11-15.
+      - '--collector.processes'
+      - '--collector.tcpstat'
+      - '--collector.interrupts'
+      # Docker masks /proc/interrupts in containers (empty file); pid+network are host, so /host/proc = same data, unmasked.
+      - '--path.procfs=/host/proc'
       # Picks up gpu_vram_temps.prom, written by gpu-vram-temps.timer on the
       # host. No extra mount needed: / is already bind-mounted at /host, and
       # the collector only ever reads.
