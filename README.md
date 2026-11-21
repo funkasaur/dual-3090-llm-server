@@ -57,7 +57,7 @@ most useful file here.
 | Cooling | Arctic Liquid Freezer III Pro 420 (pump head mounted upside down so it clears the top GPU in PCIe 1), an extra fan blowing across both GPUs. GPU thermal putty + PTM not done yet; the bottom card's fans need replacing |
 | PSU | Corsair HX1500i (ATX 3.1) |
 | UPS | CyberPower OL1500RTXL2U, RMCARD205 management card |
-| Networking | Intel 82599 10GbE SFP+ (`ixgbe`) on an M.2 M-key adapter card in the chipset M.2 slot (PCIe 2.0 x4, 5 GT/s), 10GBASE-T copper SFP+ module (fiber planned), linked at 10000 Mb/s; 9.3-9.46 Gb/s iperf3. Onboard Killer E3000 2.5GbE kept as fallback |
+| Networking | Intel 82599 10GbE SFP+ (`ixgbe`) on an M.2 M-key adapter card in the chipset M.2 slot (PCIe 2.0 x4, 5 GT/s), 10GBASE-SR optic on OM4 multimode fiber to a Brocade ICX 7250 (since 2026-10-27), linked at 10000 Mb/s; 9.39-9.48 Gb/s iperf3. Onboard Killer E3000 2.5GbE kept as fallback |
 | Chassis | NZXT H9 Flow (2025) |
 | OS | Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic (GA kernel, not HWE) |
 
@@ -78,9 +78,29 @@ most useful file here.
 > **Link flaps, 2026-10-26.** Two separate faults on the copper path: a Cat6
 > keystone coupler caused CRC errors (proven), and one brand of 10GBASE-T SFP+
 > module dropped the link repeatedly (likely; a different model has had no
-> drops since). Planned: OM4 fiber with 10GBASE-SR modules. A Grafana alert
-> fires on more than 5 link drops in 10 minutes. The NIC's 32 queue interrupts
-> all land on CCD1 (8-15, 24-31).
+> drops since). **Fiber since 2026-10-27:** 10GBASE-SR optics on 30 m OM4 to
+> the switch, which retires the copper path. Light levels at cutover:
+> -2.2/-2.6 dBm (server Tx/Rx), -2.3/-2.9 dBm (switch Tx/Rx), i.e. 0.3-0.7 dB
+> loss per strand. Grafana alerts `SfpLinkFlapping` (> 5 drops in 10 min),
+> `SfpModuleHot`/`Critical` and `SfpDomStale` watch it (docs/monitoring.md).
+> The NIC's 32 queue interrupts all land on CCD1 (8-15, 24-31).
+>
+> **Boot wait, fixed 2026-10-27.** With the copper port (`enp42s0`) unplugged,
+> `systemd-networkd-wait-online` sat out its full 2-minute timeout on every boot
+> because netplan still treated that port as required. The netplan file now
+> marks `enp42s0` optional and leaves the fiber port required (snippet in
+> [`drivers/ixgbe-sfp/README.md`](drivers/ixgbe-sfp/README.md)); the generated
+> wait targets the fiber port and returns in 0.008 s when run by hand. Not yet
+> confirmed at a real boot.
+>
+> **Remote console, 2026-10-27.** A GL.iNet Comet (GL-RM1) IP KVM plus its ATX
+> board give remote power, reset, screen and keyboard, BIOS included. The ATX
+> board sits between the case buttons and the motherboard's JFP1 header, so the
+> case buttons still work. The 3090 shows the BIOS screen on only one of its two
+> HDMI ports, so the KVM is on that port. Access is LAN and WireGuard only, with
+> the GL.iNet cloud unbound. Since 2026-11-15 a Comet PoE (GL-RM1PE) replaces
+> the GL-RM1 on the same ATX board, swapped with the server running; remote
+> power through the new unit is not re-tested yet.
 >
 > If you are planning a similar build and want 10GbE with both PCIe slots full,
 > an M.2 NIC costs you one NVMe slot and works.
