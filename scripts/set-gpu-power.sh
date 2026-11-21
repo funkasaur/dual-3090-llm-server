@@ -3,11 +3,11 @@
 # set-gpu-power.sh — enable persistence mode and apply a power cap to every
 # NVIDIA GPU in the box.
 #
-# Why cap at all: 2x RTX 3090 at their 480 W stock ceiling is ~960 W of GPU
+# Why cap at all: 2x ROG Strix RTX 3090 at their 390 W default limit (480 W max) is ~780-960 W of GPU
 # alone, which is enough to push a 1500 VA UPS past its real-world output
 # during a long prompt-processing burst. Capping to 270 W each costs only a
 # few percent of inference throughput on memory-bandwidth-bound workloads
-# while removing ~420 W of transient draw. Tune POWER_LIMIT_W for your PSU
+# while removing ~240 W (vs default) to ~420 W (vs max) of transient draw. Tune POWER_LIMIT_W for your PSU
 # and UPS, not for benchmarks.
 #
 set -euo pipefail

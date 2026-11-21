@@ -91,7 +91,7 @@ def history_offset():
     if not LEDGER.is_file():
         return _offset if _offset is not None else NO_HISTORY
     now = time.time()
-    if now - _offset_at > 600:
+    if now - _offset_at > (600 if _offset is not None else 60):  # retry a failed first read after 1 min, not 10
         _offset_at = now
         try:
             import sqlite3
@@ -102,7 +102,7 @@ def history_offset():
             _offset = dict(zip(NO_HISTORY, row))
         except Exception as e:
             print(f"ledger read failed: {e}", flush=True)
-    return _offset
+    return _offset if _offset is not None else NO_HISTORY
 
 
 def poll():

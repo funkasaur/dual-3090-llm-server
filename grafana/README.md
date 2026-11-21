@@ -5,6 +5,10 @@ deliver notifications on its own and Prometheus rules cannot without an
 Alertmanager. These rules live in Grafana's database, so this export is the only
 reviewable copy of the thing that decides when the machine wakes someone up.
 
+The exports reference this server's Prometheus datasource UID `efnh5gcimbv28f`. Replace it with yours before
+importing (`sed -i 's/efnh5gcimbv28f/<your-uid>/g' grafana/dashboards/*.json grafana/alert-rules.json`; the UID is
+in Grafana under Connections → Data sources → your Prometheus, in the URL).
+
 ```bash
 # export
 curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \

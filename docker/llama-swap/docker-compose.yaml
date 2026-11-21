@@ -7,7 +7,7 @@
 
 services:
   llama-swap:
-    image: ghcr.io/mostlygeek/llama-swap:unified-cuda-2026-11-20   # unified images have dated tags only; this build = release v275 day
+    image: ghcr.io/mostlygeek/llama-swap:unified-cuda-275   # release v275 (same image as unified-cuda-2026-11-19)
     container_name: llama-swap-unified
 
     # Two physical cores (1-2) with their SMT siblings (17-18 on a 5950X,

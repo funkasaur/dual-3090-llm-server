@@ -212,10 +212,10 @@ All of it is in [`docker/`](docker/), secrets parameterized, one directory per u
 
 ## Power
 
-Two 3090s at their stock 480W ceiling is ~960W of GPU alone, which a 1500VA
-UPS will not enjoy. Both cards are capped to **270W** via `nvidia-smi`, which
-costs only a few percent on memory-bandwidth-bound inference and removes ~420W
-of transient draw.
+These ROG Strix 3090s default to a 390W power limit (480W maximum), so two of them can draw ~780W of GPU alone
+(~960W at the maximum), which a 1500VA UPS will not enjoy. Both cards are capped to **270W** via `nvidia-smi`, which
+costs only a few percent on memory-bandwidth-bound inference and removes ~240W of transient draw versus the default
+(~420W versus the maximum).
 
 The UPS reports its own rated capacity as 1350W. Measured draw at idle with
 models unloaded is 163W (12% load), leaving comfortable headroom under load.
@@ -266,7 +266,7 @@ git clone https://github.com/<you>/dual-3090-llm-server
 cd dual-3090-llm-server
 
 # Host scripts
-sudo install -m 0755 scripts/*.sh /usr/local/bin/
+sudo install -m 0755 scripts/*.sh scripts/*.py scripts/gpu-watch /usr/local/bin/
 sudo install -m 0644 systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now optimize-ai.service optimize-ai.timer nvidia-power-limit.service
@@ -276,15 +276,19 @@ docker network create ai-net
 
 # Build the inference backend and prepare its model config. Edit config.yaml for your GGUF files.
 ./llamampere/build.sh
-(cd docker/llama-swap/config && cp config.example.yaml config.yaml && "$EDITOR" config.yaml)
+(cd docker/llama-swap/config && cp config.example.yaml config.yaml && "${EDITOR:-nano}" config.yaml)
 
 # Per-service: copy .env.example to .env and fill it in first
-cd docker/open-webui && cp .env.example .env && $EDITOR .env && docker compose up -d
+cd docker/open-webui && cp .env.example .env && "${EDITOR:-nano}" .env && docker compose up -d
 ```
 
 **Every `.env.example` needs real values before anything will start.** No
 credentials are committed to this repository, and `.gitignore` is set up to
 keep it that way.
+
+**Ports listen on all interfaces.** The compose files publish llama-swap, Qdrant, Tika, Prometheus, Grafana
+(anonymous viewer) and the exporters with no authentication, which assumes a LAN-only box behind a firewall. If
+yours isn't, bind them to `127.0.0.1` or the LAN address (`"127.0.0.1:6333:6333"`) or put auth in front.
 
 ---
 

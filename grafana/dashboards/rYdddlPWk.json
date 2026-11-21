@@ -99,21 +99,6 @@
         "textFormat": "",
         "titleFormat": "UPS on battery: {{ups}}",
         "useValueForTime": false
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "efnh5gcimbv28f"
-        },
-        "enable": true,
-        "expr": "(veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} != veeam_job_last_end_timestamp_seconds{type!=\"SimpleBackupCopyPolicy\"} offset 10m) * 1000",
-        "iconColor": "green",
-        "name": "Veeam jobs",
-        "step": "10m",
-        "tagKeys": "",
-        "textFormat": "",
-        "titleFormat": "Veeam: {{veeam_job}} finished",
-        "useValueForTime": true
       }
     ]
   },

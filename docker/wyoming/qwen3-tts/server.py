@@ -3,7 +3,7 @@
 # was 10-13 s per sentence, the qwentts.cpp GGUF port on a 3090 is ~0.8 s. This bridge has no model: it posts the text to
 # qwentts.cpp's OpenAI-style tts-server, speeds the result up with sox tempo (pitch kept; the GGUF voice is ~9% faster
 # than PyTorch, so 1.1x here = Voice 10 at 1.2x) and returns it as one Wyoming audio stream. 4-digit numbers are spoken
-# as pairs before synthesis (the model read 1105 as "eleventy 0 5"), and since 10-25 every other number and unit is
+# as pairs before synthesis (the model read 1234 as "twelve hundred thirty 4"), and since 10-25 every other number and unit is
 # spelled out too (spoken()); a word map (words.json) can fix other words.
 # Sampling temperature 0.7 (server default 0.9) to cut one-off glitches.
 # Clone mode (--voice + --voice-wav/--voice-text): the server runs the Base model and speaks every reply in the voice of
@@ -36,7 +36,7 @@ FOUR_DIGITS = re.compile(r"(?<![\d.,:$])\b(\d{4})\b(?![.,:]\d)")
 
 
 def pairs(m):
-    """1105 → eleven oh five, 2026 → twenty twenty-six, 1500 → fifteen hundred (house numbers, years)."""
+    """1234 → twelve thirty-four, 2026 → twenty twenty-six, 1500 → fifteen hundred (house numbers, years)."""
     n = int(m.group(1))
     a, b = divmod(n, 100)
     if n < 1000 or a % 10 == 0 and b == 0:   # 2000, 3000: "two thousand"
@@ -100,7 +100,7 @@ def number(m):
 
 
 def spoken(text):
-    """Numbers and units → words: 50 °F → fifty degrees, 2.5 mph → two point five miles per hour, 1105 → eleven oh five."""
+    """Numbers and units → words: 50 °F → fifty degrees, 2.5 mph → two point five miles per hour, 1234 → twelve thirty-four."""
     for p, r in UNITS:
         text = p.sub(r, text)
     text = DATE.sub(lambda m: f"{MONTHS[int(m.group(1)) - 1]} {num2words(int(m.group(2)), to='ordinal')}"

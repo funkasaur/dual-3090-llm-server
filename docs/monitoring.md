@@ -97,7 +97,7 @@ Useful metrics, with values verified against a live RMCARD205:
 | `upsAdvanceBatteryRunTimeRemaining` | TimeTicks (1/100 s) — divide by 6000 for minutes |
 
 Measured on this machine at idle with models unloaded: 163W, 12% load. That
-headroom is what justifies the 270W-per-card cap rather than the stock 480W —
+headroom is what justifies the 270W-per-card cap rather than the 390W default (480W maximum) —
 see [the power section of the README](../README.md#power).
 
 Test a target without waiting for a scrape:
@@ -122,7 +122,9 @@ curl -s 'http://localhost:9116/snmp?module=cyberpower&auth=cyberpower_v1&target=
 
 Correction to the section above on this build: dcgm-exporter 2.3.2's default counters do **not**
 include memory temperature, so VRAM and junction temperatures come from
-[`gpu-vram-temps.sh`](../scripts/gpu-vram-temps.sh) (`gputemps`, reads the card's PCI BAR, needs root)
+[`gpu-vram-temps.sh`](../scripts/gpu-vram-temps.sh) (`gputemps`, reads the card's PCI BAR, needs root; build and install it to `/usr/local/bin/gputemps` from
+[gddr6-core-junction-vram-temps](https://github.com/ThomasBaruzier/gddr6-core-junction-vram-temps) per its README.
+Reading `/dev/mem` fails when the kernel is in lockdown mode, which Secure Boot usually enables)
 as `gpu_vram_temp_celsius` / `gpu_junction_temp_celsius` / `gpu_core_temp_celsius`.
 
 **What was wrong.** The two ROG Strix 3090s sit stacked for NVLink with little room between them. Under a
@@ -295,8 +297,8 @@ you expose it, put Cloudflare Access in front.
 ## Updating the stack's images
 
 Use the newest stable release tag from the project's own registry for image updates.
-Most monitoring images and cloudflared received exact tags on 2026-11-15. The SNMP exporter still uses
-`:latest` in the example. What worked on 2026-10-29 (grafana 13.0.1 → 13.3.0, prometheus 3.12.0 → 3.15.1, node-exporter
+Most monitoring images and cloudflared received exact tags on 2026-11-15; the SNMP exporter, Wyoming, Open WebUI,
+Postgres and llama-swap followed on 2026-11-21. Only the retired `docker/infinity` rollback file still uses `:latest`. What worked on 2026-10-29 (grafana 13.0.1 → 13.3.0, prometheus 3.12.0 → 3.15.1, node-exporter
 1.11.1 → 1.12.1, plus open-webui and cloudflared) and again for the 11-15 pins:
 
 1. Tag the running image for rollback: `docker tag $(docker inspect -f '{{.Image}}' <c>) <repo>:pre-update-<date>`.

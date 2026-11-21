@@ -10,8 +10,9 @@ def call(**m):
     while True:
         r = json.loads(ws.recv())
         if r.get('id') == _mid: return r.get('result') if r.get('success') else {'_error': r.get('error')}
-RAW = {'server': 'server', 'smart_15em_plug_in_4': 'office', 'smart_15em_plug_in_5': 'desktop',
-       'smart_15em_plug_in_6': 'nerdqaxe', 'smart_15em_plug_in_7': 'llm_server', 'tv_and_audio': 'tv_and_audio'}
+# Example: raw HA plug entity id -> name of its corrected sensor (sensor.<name>_power_corrected). Replace with yours.
+RAW = {'plug_1_raw': 'plug_1', 'plug_4_raw': 'plug_4', 'plug_5_raw': 'plug_5',
+       'plug_6_raw': 'plug_6', 'plug_7_raw': 'plug_7', 'room_b_raw': 'room_b'}
 REPL = {f'sensor.{r}_{k}': f'sensor.{s}_{k}_corrected' for r, s in RAW.items() for k in ('power', 'voltage')}
 PAT = re.compile(r'(?<![\w.])(' + '|'.join(re.escape(k) for k in REPL) + r')(?![\w])')
 def fix(text): return PAT.sub(lambda m: REPL[m.group(1)], text)

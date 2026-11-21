@@ -3,7 +3,7 @@
 These run on the host, not in a container. Install with:
 
 ```bash
-sudo install -m 0755 scripts/*.sh /usr/local/bin/
+sudo install -m 0755 scripts/*.sh scripts/*.py scripts/gpu-watch /usr/local/bin/
 sudo install -m 0644 systemd/*    /etc/systemd/system/
 sudo systemctl daemon-reload
 ```
