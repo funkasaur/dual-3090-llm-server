@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 import requests
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info
 
@@ -15,6 +16,7 @@ total_cache_tokens = Gauge('llamaswap_total_cache_tokens', 'Total cache tokens')
 last_duration_ms = Gauge('llamaswap_last_request_duration_ms', 'Duration of the most recent request in ms')
 last_tokens_per_second = Gauge('llamaswap_last_request_tokens_per_second', 'Generation speed of the most recent request')
 last_prompt_per_second = Gauge('llamaswap_last_request_prompt_per_second', 'Prompt processing speed of the most recent request')
+last_timestamp = Gauge('llamaswap_last_request_timestamp_seconds', 'Unix time of the most recent request')
 
 active_model = Info('llamaswap_active_model', 'Model used by the most recently seen request')
 
@@ -64,8 +66,9 @@ def observe(records):
         if r.get('id', 0) <= _seen_id:
             continue
         t = r.get('tokens') or {}
-        new, cached, out = t.get('input_tokens', 0), t.get('cache_tokens', 0), t.get('output_tokens', 0)
-        ctx = new + cached
+        # llama-swap >= v269: input_tokens is the whole prompt, cache hits included (live v270 checked 11-21)
+        ctx, cached, out = t.get('input_tokens', 0), t.get('cache_tokens', 0), t.get('output_tokens', 0)
+        new = max(ctx - cached, 0)
         status_total.labels(str(r.get('resp_status_code', 0))).inc()
         duration_s.observe(r.get('duration_ms', 0) / 1000)
         context_tok.observe(ctx)
@@ -127,6 +130,8 @@ def poll():
             last_duration_ms.set(latest.get('duration_ms', 0))
             last_tokens_per_second.set(tokens.get('tokens_per_second', 0))
             last_prompt_per_second.set(tokens.get('prompt_per_second', 0))
+            if latest.get('timestamp'):
+                last_timestamp.set(datetime.fromisoformat(latest['timestamp']).timestamp())
     except Exception as e:
         print(f"activity poll failed: {e}", flush=True)
 
