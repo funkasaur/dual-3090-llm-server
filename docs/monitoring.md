@@ -272,3 +272,24 @@ This stack enables anonymous Grafana viewers, which is convenient for a wall
 display and fine on a trusted LAN. It also runs a Cloudflare tunnel, and the
 distance between "LAN only" and "on the internet" is one dashboard route. If
 you expose it, put Cloudflare Access in front.
+
+## Updating the stack's images
+
+The monitoring images and cloudflared are pinned to exact release tags (2026-11-15; before that `:latest`), so an
+update is a deliberate tag bump: newest stable release from the project's own registry, never `latest` or a
+pre-release. What worked on 2026-10-29 (grafana 13.0.1 → 13.3.0, prometheus 3.12.0 → 3.15.1, node-exporter
+1.11.1 → 1.12.1, plus open-webui and cloudflared) and again for the 11-15 pins:
+
+1. Tag the running image for rollback: `docker tag $(docker inspect -f '{{.Image}}' <c>) <repo>:pre-update-<date>`.
+2. Back up: compose file, `docker logs <c>` into `backups/logs/`, data volumes as a tar in a throwaway
+   `alpine` container, then `gzip -t` every archive before going on. Grafana and Open WebUI run DB migrations
+   on start, so their volume / `pg_dump` backups are the real rollback, not the image tag.
+3. Bump the tag, `docker compose pull <service>`, then `docker compose up -d --no-deps <service>`, one service at a time.
+4. Verify through the real path: Prometheus targets + `/-/ready` (port 9090 isn't published; use `docker exec
+   prometheus wget`), Grafana `/api/health` + alert-rule health with an Editor service-account token, Open WebUI
+   `/health/db`.
+
+Rollback: point the compose service at `<repo>:pre-update-<date>` and restore the volume tar.
+
+Gotcha: in a backgrounded shell, `docker run --rm ... tar` can outlive the shell's "completed" notice. Check
+for the tar container (`docker ps --filter ancestor=alpine:3`) and `gzip -t` the archive before trusting it.

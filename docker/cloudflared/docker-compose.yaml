@@ -14,7 +14,7 @@
 
 services:
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2026.11.0  # pinned 2026-11-15 (was :latest)
     container_name: cloudflared
     cpuset: "8-15,24-31"        # CCD1
     restart: unless-stopped

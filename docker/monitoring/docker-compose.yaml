@@ -1,7 +1,7 @@
 services:
   # 1. The Database (Stores metrics)
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.16.0   # pinned 2026-11-15 (was latest = 3.15.1)
     container_name: prometheus
     cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
@@ -22,7 +22,7 @@ services:
 
   # 2. The Dashboard (Visualization)
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.1   # pinned 2026-11-15 (was latest = 13.3.0; 13.3.1 fixes 6 CVEs)
     container_name: grafana
     cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
 
   # 3. System Metrics (RAM, CPU, Disk)
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.12.1   # pinned 2026-11-15 (was latest = same version)
     container_name: node-exporter
     cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
@@ -147,7 +147,7 @@ services:
   # 8. NVMe SMART health (wear, spare, media errors, temperature). Privileged: smartctl needs raw
   #    device access. Not published; Prometheus scrapes it on ai-net (job smartctl).
   smartctl-exporter:
-    image: prometheuscommunity/smartctl-exporter:v0.14.0
+    image: prometheuscommunity/smartctl-exporter:v0.15.0
     container_name: smartctl-exporter
     cpuset: "8-15,24-31" # Strictly on CCD1
     restart: unless-stopped
