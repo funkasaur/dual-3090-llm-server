@@ -63,7 +63,7 @@ groups:
       # that fell off the bus, a double-bit ECC event. Rare, and always worth
       # knowing about on a box running unattended inference.
       - alert: GpuXidErrors
-        expr: increase(DCGM_FI_DEV_XID_ERRORS[15m]) > 0
+        expr: sum by (gpu) (DCGM_EXP_XID_ERRORS_COUNT) > 0  # dcgm-exporter 4.8.4: XID count over a 5 min window
         for: 1m
         labels:
           severity: critical

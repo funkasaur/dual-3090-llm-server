@@ -194,7 +194,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "avg(DCGM_FI_DEV_GPU_TEMP{Hostname=~\"$host\", gpu=~\"$gpu\"})",
+          "expr": "avg(DCGM_FI_DEV_GPU_TEMP{hostname=~\"$host\", gpu=~\"$gpu\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -279,7 +279,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{Hostname=~\"$host\", gpu=~\"$gpu\"})",
+          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{hostname=~\"$host\", gpu=~\"$gpu\"})",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -381,7 +381,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{Hostname=~\"$host\", gpu=~\"$gpu\"}[1h]) / 3600000)",
+          "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{hostname=~\"$host\", gpu=~\"$gpu\"}[1h]) / 3600000)",
           "instant": false,
           "interval": "",
           "legendFormat": "Last 1h",
@@ -394,7 +394,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{Hostname=~\"$host\", gpu=~\"$gpu\"}[24h]) / 3600000)",
+          "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{hostname=~\"$host\", gpu=~\"$gpu\"}[24h]) / 3600000)",
           "instant": false,
           "legendFormat": "Last 24h",
           "range": true,
@@ -1443,9 +1443,9 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_FB_USED{Hostname=~\"$host\", gpu=~\"$gpu\"}",
+          "expr": "DCGM_FI_DEV_FB_USED{hostname=~\"$host\", gpu=~\"$gpu\"}",
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }
@@ -1552,9 +1552,9 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_POWER_USAGE{Hostname=~\"$host\", gpu=~\"$gpu\"}",
+          "expr": "DCGM_FI_DEV_POWER_USAGE{hostname=~\"$host\", gpu=~\"$gpu\"}",
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }
@@ -1663,9 +1663,9 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_UTIL{Hostname=~\"$host\", gpu=~\"$gpu\"}",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{hostname=~\"$host\", gpu=~\"$gpu\"}",
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }
@@ -1774,9 +1774,9 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_FB_USED{Hostname=~\"$host\", gpu=~\"$gpu\"} / (DCGM_FI_DEV_FB_USED{Hostname=~\"$host\", gpu=~\"$gpu\"} + DCGM_FI_DEV_FB_FREE{Hostname=~\"$host\", gpu=~\"$gpu\"})",
+          "expr": "DCGM_FI_DEV_FB_USED{hostname=~\"$host\", gpu=~\"$gpu\"} / (DCGM_FI_DEV_FB_USED{hostname=~\"$host\", gpu=~\"$gpu\"} + DCGM_FI_DEV_FB_FREE{hostname=~\"$host\", gpu=~\"$gpu\"})",
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }
@@ -1883,10 +1883,10 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_TEMP{Hostname=~\"$host\", gpu=~\"$gpu\"}",
+          "expr": "DCGM_FI_DEV_GPU_TEMP{hostname=~\"$host\", gpu=~\"$gpu\"}",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "refId": "A"
         }
       ],
@@ -2126,11 +2126,11 @@
             "uid": "efnh5gcimbv28f"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_SM_CLOCK{Hostname=~\"$host\", gpu=~\"$gpu\"} * 1000000",
+          "expr": "DCGM_FI_DEV_SM_CLOCK{hostname=~\"$host\", gpu=~\"$gpu\"} * 1000000",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }
@@ -2171,7 +2171,7 @@
         "datasource": {
           "type": "prometheus"
         },
-        "definition": "label_values(DCGM_FI_DEV_GPU_TEMP,Hostname)",
+        "definition": "label_values(DCGM_FI_DEV_GPU_TEMP,hostname)",
         "hide": 0,
         "includeAll": true,
         "label": "Host",
@@ -2180,7 +2180,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(DCGM_FI_DEV_GPU_TEMP,Hostname)",
+          "query": "label_values(DCGM_FI_DEV_GPU_TEMP,hostname)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

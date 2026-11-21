@@ -107,6 +107,16 @@ curl -s 'http://localhost:9116/snmp?module=cyberpower&auth=cyberpower_v1&target=
   | grep -E 'upsBaseOutputStatus|upsAdvanceOutputLoad'
 ```
 
+## dcgm-exporter 4.8.4 (2026-10-30)
+
+- **dcgm-exporter 2.3.2 → 4.8.4** (`nvcr.io/nvidia/k8s/dcgm-exporter:4.8.4`, mem 1g; it now embeds the DCGM host engine,
+  ~420 MiB). Metric list = [`docker/monitoring/dcgm/counters.csv`](../docker/monitoring/dcgm/counters.csv) (upstream default
+  minus the driver-version label, plus XID/clock-event counters and `DCGM_FI_DEV_CLOCKS_EVENT_REASONS`).
+  Breaking upstream changes handled: label `Hostname` → `hostname` (3 dashboards updated); XID errors carry an `err_msg`
+  label, so the alert is now `sum by (gpu) (DCGM_EXP_XID_ERRORS_COUNT) > 0` instead of `increase(DCGM_FI_DEV_XID_ERRORS[15m])`.
+  `DCGM_FI_DEV_MEMORY_TEMP` is off again: on the RTX 3090 it reads 0, so the section below still applies.
+  `FB_USED` now excludes reserved VRAM (~450 MiB), so used/(used+free) reads a hair lower than before.
+
 ## GPU memory temperature and fan curve (2026-10-01)
 
 Correction to the section above on this build: dcgm-exporter 2.3.2's default counters do **not**

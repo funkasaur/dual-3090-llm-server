@@ -746,7 +746,7 @@
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_GPU_UTIL{gpu=\"0\"})",
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }
@@ -828,7 +828,7 @@
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_GPU_UTIL{gpu=\"1\"})",
           "interval": "",
-          "legendFormat": "{{Hostname}} - GPU {{gpu}}",
+          "legendFormat": "{{hostname}} - GPU {{gpu}}",
           "range": true,
           "refId": "A"
         }

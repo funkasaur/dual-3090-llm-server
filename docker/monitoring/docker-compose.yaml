@@ -64,7 +64,9 @@ services:
 
   # 4. GPU Metrics (VRAM, Temp, Power)
   dcgm-exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:2.3.2-2.6.2-ubuntu20.04
+    # 4.8.4 since 2026-10-30 (was 2.3.2 from 2022). Upstream renamed the label Hostname -> hostname (4.8.3);
+    # dashboards were updated the same day. Metric list = ./dcgm/counters.csv (see its header).
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:4.8.4
     container_name: dcgm-exporter
     # dcgm-exporter stamps every metric with a Hostname label taken from the
     # container's hostname, which Docker sets to the container ID. Recreating
@@ -76,12 +78,15 @@ services:
     restart: unless-stopped
     ports:
       - "2400:9400"
+    mem_limit: 1g  # 4.8.4 embeds the DCGM host engine: ~440 MiB at start (2.3.2 used ~20)
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+      - ./dcgm/counters.csv:/etc/dcgm-exporter/llm-server.csv:ro
     runtime: nvidia  # Critical for GPU access
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+      - DCGM_EXPORTER_COLLECTORS=/etc/dcgm-exporter/llm-server.csv
     cap_add:
       - SYS_ADMIN
     networks:
