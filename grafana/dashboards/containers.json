@@ -1,0 +1,729 @@
+{
+ "uid": "containers",
+ "title": "Containers",
+ "tags": [
+  "docker",
+  "cadvisor"
+ ],
+ "timezone": "browser",
+ "refresh": "1m",
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "schemaVersion": 39,
+ "templating": {
+  "list": [
+   {
+    "name": "container",
+    "label": "Container",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "efnh5gcimbv28f"
+    },
+    "query": {
+     "query": "label_values(container_last_seen{name!=\"\"}, name)",
+     "refId": "v"
+    },
+    "refresh": 2,
+    "multi": true,
+    "includeAll": true,
+    "allValue": ".+",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "stat",
+   "title": "Containers running",
+   "description": "Containers cAdvisor sees right now.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 0,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "count(count by (name)(container_last_seen{name!=\"\"}))",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "color": {
+      "mode": "thresholds"
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "All containers CPU",
+   "description": "100% = one full core; the host has 32 threads.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 6,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[2m])) * 100",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "color": {
+      "mode": "thresholds"
+     },
+     "decimals": 0
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "All containers RAM",
+   "description": "Working set (what the OOM killer counts), not page cache.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 12,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(container_memory_working_set_bytes{name!=\"\"})",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "text",
+        "value": null
+       }
+      ]
+     },
+     "color": {
+      "mode": "thresholds"
+     },
+     "decimals": 1
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "OOM kills (24h)",
+   "description": "Out-of-memory kills inside containers in the last day.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 18,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(increase(container_oom_events_total{name!=\"\"}[24h])) or vector(0)",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     },
+     "color": {
+      "mode": "thresholds"
+     },
+     "decimals": 0
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 5,
+   "type": "table",
+   "title": "Right now",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 12,
+    "w": 24,
+    "x": 0,
+    "y": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(rate(container_cpu_usage_seconds_total{name=~\"$container\", name!=\"\"}[2m])) * 100",
+     "instant": true,
+     "format": "table"
+    },
+    {
+     "refId": "B",
+     "expr": "sum by (name)(container_memory_working_set_bytes{name=~\"$container\", name!=\"\"})",
+     "instant": true,
+     "format": "table"
+    },
+    {
+     "refId": "C",
+     "expr": "sum by (name)(rate(container_network_receive_bytes_total{name=~\"$container\", name!=\"\"}[2m]))",
+     "instant": true,
+     "format": "table"
+    },
+    {
+     "refId": "D",
+     "expr": "sum by (name)(rate(container_network_transmit_bytes_total{name=~\"$container\", name!=\"\"}[2m]))",
+     "instant": true,
+     "format": "table"
+    },
+    {
+     "refId": "E",
+     "expr": "max by (name)(time() - container_start_time_seconds{name=~\"$container\", name!=\"\"})",
+     "instant": true,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "merge"
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true
+      },
+      "renameByName": {
+       "name": "Container",
+       "Value #A": "CPU % (one core)",
+       "Value #B": "RAM",
+       "Value #C": "Net in",
+       "Value #D": "Net out",
+       "Value #E": "Up for"
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "CPU % (one core)",
+        "desc": true
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CPU % (one core)"
+      },
+      "properties": [
+       {
+        "id": "decimals",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "RAM"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "bytes"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Net in"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "Bps"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Net out"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "Bps"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Up for"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "s"
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true
+   }
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "CPU % (one core = 100)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 0,
+    "y": 17
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(rate(container_cpu_usage_seconds_total{name=~\"$container\", name!=\"\"}[2m])) * 100",
+     "legendFormat": "{{name}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "custom": {
+      "fillOpacity": 10,
+      "lineWidth": 1,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "max",
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 7,
+   "type": "timeseries",
+   "title": "RAM (working set)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 12,
+    "y": 17
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(container_memory_working_set_bytes{name=~\"$container\", name!=\"\"})",
+     "legendFormat": "{{name}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes",
+     "custom": {
+      "fillOpacity": 10,
+      "lineWidth": 1,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "max",
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 8,
+   "type": "timeseries",
+   "title": "Network in",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 0,
+    "y": 26
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(rate(container_network_receive_bytes_total{name=~\"$container\", name!=\"\"}[2m]))",
+     "legendFormat": "{{name}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "Bps",
+     "custom": {
+      "fillOpacity": 10,
+      "lineWidth": 1,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "max",
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "Network out",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 12,
+    "y": 26
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(rate(container_network_transmit_bytes_total{name=~\"$container\", name!=\"\"}[2m]))",
+     "legendFormat": "{{name}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "Bps",
+     "custom": {
+      "fillOpacity": 10,
+      "lineWidth": 1,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "max",
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 10,
+   "type": "timeseries",
+   "title": "Disk read",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 0,
+    "y": 35
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(rate(container_fs_reads_bytes_total{name=~\"$container\", name!=\"\"}[2m]))",
+     "legendFormat": "{{name}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "Bps",
+     "custom": {
+      "fillOpacity": 10,
+      "lineWidth": 1,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "max",
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 11,
+   "type": "timeseries",
+   "title": "Disk write",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "efnh5gcimbv28f"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 12,
+    "y": 35
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (name)(rate(container_fs_writes_bytes_total{name=~\"$container\", name!=\"\"}[2m]))",
+     "legendFormat": "{{name}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "Bps",
+     "custom": {
+      "fillOpacity": 10,
+      "lineWidth": 1,
+      "showPoints": "never",
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "max",
+      "lastNotNull"
+     ],
+     "sortBy": "Last *",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  }
+ ]
+}

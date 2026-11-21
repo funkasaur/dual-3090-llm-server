@@ -56,3 +56,7 @@ scrape_configs:
     scrape_interval: 60s
     static_configs:
       - targets: ['smartctl-exporter:9633']
+  # Per-container CPU/RAM/net from cAdvisor (2026-10-30). Series use the `name` label = container name.
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
