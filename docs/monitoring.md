@@ -143,8 +143,25 @@ GPU 0 peaked 86 C). Worse, the Strix zero-RPM mode keeps the fans **stopped** un
 
 Hardware facts found on the way: NVML exposes **2 fan channels** per Strix card for its 3 fans (one channel
 drives two; both set together, all three spin), range 30-100 %. RPM per channel at 60/70/80/90 %:
-~1350 / 1710 / 2100 / 2520. At 30 % the fans stop rather than turn slowly. Case fans: only motherboard
-header fan1 runs at 100 %; fan2-5 are on the BIOS SmartFan curve (CPU temperature), not GPU temperature.
+~1350 / 1710 / 2100 / 2520. At 30 % the fans stop rather than turn slowly.
+
+### Case fan tests before the 2026-10-21 rewire
+
+On the 2026-10-01 wiring, fan1 ran at 100 % and fan2-5 followed the BIOS SmartFan curve.
+
+**2026-10-01 intake test.** fan3 + fan5 at 100 % for 5 min under steady full load (both GPUs 269 W),
+full-load seconds only, against the 3 minutes before: GPU 1 VRAM 86.0 -> **86.0 C (no change)**,
+GPU 1 junction about -2 C, GPU 1 core -2 C, board AUXTIN2 51 -> 47 C, GPU 0 and CPU unchanged, GPU 1
+fan target 85.2 -> 84.1 %. The intakes cool the core / junction / board, not GPU 1's back-side memory,
+which faces the gap between the cards. At the time, the next test was to set the GPU-gap fan to 100 % in the BIOS.
+
+**2026-10-07 BIOS test.** GPU-gap fan at 100 % and rear exhaust on SmartFan (PCIe 1 temperature), set at the 11:13 boot.
+The test showed no measurable change. Sustained 240 W+ seconds, modal VRAM before (Oct 6 11:13-12:00, Oct 7 07:00-10:55) vs after
+(11:13-11:57, ~15 min of full load): GPU 0 78 -> 78 C, GPU 1 84 -> 84 C (86 next), GPU 1 fan target 79 -> 79 %,
+core/junction within 1-2 C. Both headers were on the NUC126, so Linux could not read their RPM.
+The PCIe 1 sensor is likely a board temperature that barely moves, so the exhaust may not ramp.
+The sample could show a change of 4 C or more. Other adjustments considered were GPU 1 power,
+memory clock, and back-side thermal pads.
 
 ### Case fans (MSI MEG X570 GODLIKE, NZXT H9 Flow RGB) — remapped 2026-10-21 after a rewire
 
@@ -174,21 +191,6 @@ Note SYS_FAN2 carries four fans on one header; its rpm reading is one fan's tach
 `--lead N` (wait before the first channel), `--gap N` (pause between channels), all 1-300 s, `--dry-run`.
 Restores each channel's mode; the duty then ramps back on the BIOS curve. Remote run (server in another
 room): `sudo case-fans-identify.py 2 3 4 5 6 --lead 60 --hold 10 --gap 10` and count bursts in order.
-
-**Do the intakes help VRAM?** fan3 + fan5 at 100 % for 5 min under steady full load (both GPUs 269 W),
-full-load seconds only, against the 3 minutes before: GPU 1 VRAM 86.0 -> **86.0 C (no change)**,
-GPU 1 junction about -2 C, GPU 1 core -2 C, board AUXTIN2 51 -> 47 C, GPU 0 and CPU unchanged, GPU 1
-fan target 85.2 -> 84.1 %. The intakes cool the core / junction / board, not GPU 1's back-side memory,
-which faces the gap between the cards. Decision: no case-fan control in software; next lever is the
-GPU-gap fan's header at a fixed 100 % in the BIOS (then measure the same way), then a lower GPU 1 power
-cap or new back-side thermal pads.
-
-**BIOS GPU-gap fan at 100 % + rear exhaust on "smart" (PCIe 1 temperature), set 2026-10-07 at the 11:13 boot:**
-no measurable change. Sustained 240 W+ seconds, modal VRAM before (Oct 6 11:13-12:00, Oct 7 07:00-10:55) vs after
-(11:13-11:57, ~15 min of full load): GPU 0 78 -> 78 C, GPU 1 84 -> 84 C (86 next), GPU 1 fan target 79 -> 79 %,
-core/junction within 1-2 C. Both headers are on the NUC126 (no Linux driver), so their RPM can't be confirmed from
-Linux; the PCIe 1 sensor is likely a board temperature that barely moves, so the exhaust may not ramp. Small sample:
-a 2 C effect would not show, 4 C+ would. Remaining levers: GPU 1 power cap / memory clock, back-side pads.
 
 Install / roll back:
 
@@ -292,9 +294,9 @@ you expose it, put Cloudflare Access in front.
 
 ## Updating the stack's images
 
-The monitoring images and cloudflared are pinned to exact release tags (2026-11-15; before that `:latest`), so an
-update is a deliberate tag bump: newest stable release from the project's own registry, never `latest` or a
-pre-release. What worked on 2026-10-29 (grafana 13.0.1 → 13.3.0, prometheus 3.12.0 → 3.15.1, node-exporter
+Use the newest stable release tag from the project's own registry for image updates.
+Most monitoring images and cloudflared received exact tags on 2026-11-15. The SNMP exporter still uses
+`:latest` in the example. What worked on 2026-10-29 (grafana 13.0.1 → 13.3.0, prometheus 3.12.0 → 3.15.1, node-exporter
 1.11.1 → 1.12.1, plus open-webui and cloudflared) and again for the 11-15 pins:
 
 1. Tag the running image for rollback: `docker tag $(docker inspect -f '{{.Image}}' <c>) <repo>:pre-update-<date>`.
@@ -302,9 +304,9 @@ pre-release. What worked on 2026-10-29 (grafana 13.0.1 → 13.3.0, prometheus 3.
    `alpine` container, then `gzip -t` every archive before going on. Grafana and Open WebUI run DB migrations
    on start, so their volume / `pg_dump` backups are the real rollback, not the image tag.
 3. Bump the tag, `docker compose pull <service>`, then `docker compose up -d --no-deps <service>`, one service at a time.
-4. Verify through the real path: Prometheus targets + `/-/ready` (port 9090 isn't published; use `docker exec
-   prometheus wget`), Grafana `/api/health` + alert-rule health with an Editor service-account token, Open WebUI
-   `/health/db`.
+4. Check Prometheus targets and `http://localhost:2090/-/ready` (host port 2090 maps to container port 9090).
+   Check Grafana's `/api/health` and alert-rule health with an Editor service-account token, then check
+   Open WebUI's `/health/db`.
 
 Rollback: point the compose service at `<repo>:pre-update-<date>` and restore the volume tar.
 

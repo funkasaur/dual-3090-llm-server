@@ -38,7 +38,7 @@ services:
       # llama-swap's activity store (sqlite); survives container restarts.
       - ./data:/app/data
       # The llamAmpere build (see llamampere/build.sh).
-      - ./llamampere/bin:/opt/llamampere:ro
+      - ../../llamampere/bin:/opt/llamampere:ro
       # llamAmpere's prompt-cache disk tier: the RAM prompt cache is written here at unload
       # and restored at the next load of the same model + KV config (~1.4 s for a 33k prompt vs ~20 s
       # prefill). Without this mount it sits in the container layer and is lost on every re-create.

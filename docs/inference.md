@@ -10,7 +10,7 @@
   2026-11-10 the Swift 1.5 post-train of it, [A/B](swift15-ab.md)) since
   2026-09-26. [`JakeATX/llamAmpere`](https://github.com/JakeATX/llamAmpere) is a
   llama.cpp fork with attention kernels written for Ampere (sm_86). It is built
-  here from a pinned commit plus two local patches — see
+  here from a pinned commit plus five local patches (0002, 0003, 0004, 0006 and 0007). See
   [`llamampere/`](../llamampere/README.md) — and mounted into the llama-swap
   container.
 - **`ik-llama-server`** — [`ik_llama.cpp`](https://github.com/ikawrakow/ik_llama.cpp),
@@ -165,9 +165,9 @@ Two consequences:
   the first tokens change. Pick one effort per session.
 
 On llamAmpere (as upstream llama.cpp) a top-level `reasoning_effort` *overrides*
-the kwargs. Hermes sends a top-level `"reasoning_effort": "medium"` on every
-request, so an agent asking for `xhigh` via the kwargs would silently have run at
-medium. Local patch 0002 makes the kwargs win when both are present — measured
+the kwargs. Hermes Agent, an optional inference client, sends a top-level
+`"reasoning_effort": "medium"` on every request. An agent asking for `xhigh` via
+the kwargs would silently have run at medium. Local patch 0002 makes the kwargs win when both are present — measured
 end to end: the xhigh request renders exactly 38 tokens longer, identical to
 ik_llama's behaviour. A top-level field on its own still applies.
 
@@ -222,8 +222,9 @@ re-prefilling (~2 minutes at 130k).
 Upstream llamAmpere stored the MTP draft layer's *entire* KV cache in every
 checkpoint (the KV cache's serializer ignores the "partial only" flag the
 server passes), so checkpoints grew with context: 375 MiB at 107k, 537 MiB at
-184k, and a 130k session filled ~10.7 GB of RAM cache. Local patch 0001 skips
-that copy — restore already truncates the draft cache — and checkpoints are a
+184k, and a 130k session filled ~10.7 GB of RAM cache. Patch 0001 went upstream
+in `dc2b130` and was dropped from the local series at v0.5.2. It skips that copy
+because restore already truncates the draft cache, and checkpoints are a
 constant ~150 MiB. Verified: restored output byte-identical to a cold
 computation and to the unpatched behaviour. With it, `--cache-ram 32768` holds
 about four long sessions. Mainline llama.cpp has the same code path.
@@ -235,7 +236,7 @@ ipc: host          # required for CUDA IPC / P2P between the two cards
 shm_size: "16gb"   # ignored under ipc: host; harmless
 cap_add: [IPC_LOCK]  # only matters if --mlock is used
 volumes:
-  - ./llamampere/bin:/opt/llamampere:ro
+  - ../../llamampere/bin:/opt/llamampere:ro
 ```
 
 `ipc: host` is the one people miss. Without it, CUDA peer-to-peer between the
@@ -268,7 +269,9 @@ tokenize a fixed string and expects 6 tokens; two consecutive failures unload
 the model through llama-swap so the next request reloads it cleanly. It writes
 metrics through node-exporter's textfile collector, and two Grafana rules
 (`InferenceEngineWedged`, `LlmWatchdogStale`) deliver to Telegram. The failure
-path was tested end to end, including the Telegram message. Files:
+path was tested end to end, including the Telegram message. The watchdog defaults
+to `Qwen-27B-Q8` from the sample config. Set its `MODEL` environment variable if you
+use a different model key. Files:
 [`scripts/llm-watchdog.sh`](../scripts/llm-watchdog.sh),
 [`systemd/llm-watchdog.*`](../systemd/).
 
@@ -288,5 +291,5 @@ docker exec llama-swap-unified sh -c 'grep Cpus_allowed_list /proc/$(pgrep -f ll
 cat /var/lib/node_exporter/textfile_collector/llm_watchdog.prom
 
 # Rolling back the main model to ik_llama: swap the two keys in config.yaml
-#   Qwen3.8-27B-Q8-Medium-Reason  <->  Qwen3.8-27B-Q8-Medium-Reason-ik
+#   Qwen-27B-Q8  <->  Qwen-27B-Q8-ik
 ```

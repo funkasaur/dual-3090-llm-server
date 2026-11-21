@@ -12,7 +12,7 @@
 set -uo pipefail
 
 SWAP="${SWAP:-http://127.0.0.1:3060}"
-MODEL="${MODEL:-Qwen3.8-27B-Q8-Medium-Reason}"
+MODEL="${MODEL:-Qwen-27B-Q8}"
 PROBE_TEXT="${PROBE_TEXT:-Hello world this is a test}"
 EXPECTED_TOKENS="${EXPECTED_TOKENS:-6}"
 FAILS_TO_ACT="${FAILS_TO_ACT:-2}"

@@ -901,7 +901,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Fan % (left) against VRAM and junction temperature (right). 'curve target' is what gpu-fan-curve set; a gap in it means the driver is in control (idle / cool).",
+      "description": "Fan curve target (left) against VRAM and junction temperature (right). Gaps in the target show when the driver controls the fans.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -968,25 +968,6 @@
                   "fixedColor": "orange",
                   "mode": "fixed"
                 }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "fan %"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
               }
             ]
           },
@@ -1076,15 +1057,6 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "llamaswap_gpu_fan_speed_percent{uuid=\"GPU-882bbe38-2291-3fc8-e53b-f66c7cf8b124\"}",
-          "legendFormat": "fan %",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "efnh5gcimbv28f"
-          },
           "expr": "gpu_fan_curve_target_percent{gpu=\"0\"} >= 0",
           "legendFormat": "curve target %",
           "refId": "B"
@@ -1117,7 +1089,7 @@
           "refId": "E"
         }
       ],
-      "title": "GPU 0: fan vs VRAM",
+      "title": "GPU 0: fan target vs VRAM",
       "type": "timeseries"
     },
     {
@@ -1125,7 +1097,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Fan % (left) against VRAM and junction temperature (right). 'curve target' is what gpu-fan-curve set; a gap in it means the driver is in control (idle / cool).",
+      "description": "Fan curve target (left) against VRAM and junction temperature (right). Gaps in the target show when the driver controls the fans.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -1192,25 +1164,6 @@
                   "fixedColor": "orange",
                   "mode": "fixed"
                 }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "fan %"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
               }
             ]
           },
@@ -1300,15 +1253,6 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "llamaswap_gpu_fan_speed_percent{uuid=\"GPU-c85a79ea-ee4e-1709-02ab-2686e69ebc39\"}",
-          "legendFormat": "fan %",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "efnh5gcimbv28f"
-          },
           "expr": "gpu_fan_curve_target_percent{gpu=\"1\"} >= 0",
           "legendFormat": "curve target %",
           "refId": "B"
@@ -1341,7 +1285,7 @@
           "refId": "E"
         }
       ],
-      "title": "GPU 1: fan vs VRAM",
+      "title": "GPU 1: fan target vs VRAM",
       "type": "timeseries"
     },
     {

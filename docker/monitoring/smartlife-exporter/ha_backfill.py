@@ -6,8 +6,8 @@ END = int(time.mktime(time.strptime("2026-09-26 21:07", "%Y-%m-%d %H:%M")))
 d = json.load(open("ha_stats.json"))
 ids = {m["metric"]["name"]: m["metric"]["device_id"] for m in json.load(urllib.request.urlopen(
     "http://localhost:2090/api/v1/query?query=smartlife_device_topology"))["data"]["result"]}
-MAP = {"server": "Server", "smart_15em_plug_in_4": "Office", "smart_15em_plug_in_5": "Desktop", "tv_and_audio": "TV and Audio",
-       "docking_station": "Brocade Switch", "laptop": "Optiplex 7070 SFF", "new_plugin_2": "Desk"}
+MAP = {"room_c": "Room C", "room_a": "Room A", "room_b": "Room B", "plug_1": "Plug 1",
+       "plug_6": "Plug 6", "plug_7": "Plug 7", "plug_4": "Plug 4"}
 def scaled(p, period):
     P = {r["start"] // 1000: r["mean"] for r in d[period].get(f"sensor.{p}_power", []) if r.get("mean") is not None}
     V = {r["start"] // 1000: r["mean"] for r in d[period].get(f"sensor.{p}_voltage", []) if r.get("mean") is not None}
@@ -21,15 +21,15 @@ for p, name in MAP.items():
             for k in range(12): pts[t + 300 * k] = w
     pts.update(fine)
     series[name] = {t: w for t, w in pts.items() if t < END and 0 <= w < 1900}
-# Internet and Den: hourly kWh change -> mean watts
+# Plug 2: hourly kWh change -> mean watts
 pts = {}
-for r in d["hour_energy"]["sensor.internet_and_den_total_energy"]:
+for r in d["hour_energy"]["sensor.plug_2_total_energy"]:
     ch = r.get("change")
     if ch is None or not 0 <= ch < 1.8: continue
     t = r["start"] // 1000
     for k in range(12):
         if t + 300 * k < END: pts[t + 300 * k] = ch * 1000
-series["Internet and Den"] = pts
+series["Plug 2"] = pts
 with open("ha_backfill.om", "w") as f:
     f.write("# HELP smartlife_power_watts_history Plug power from Home Assistant statistics (5-min / hourly means)\n")
     f.write("# TYPE smartlife_power_watts_history gauge\n")

@@ -39,6 +39,9 @@ models:
   # GGUF (e.g. to a post-train like Swift 1.5), point this at a new dir.
   # ---------------------------------------------------------------------
   Qwen-27B-Q8:
+    # Optional patch 0004 shortlist. Place a compatible map under the mounted
+    # models directory and copy this flag into cmd with the other draft flags.
+    # --spec-draft-vocab-map /models/<your-model>/draft-vocab-map
     cmd: >
       /opt/llamampere/llama-server
       --model /models/<your-model>/Qwen-27B-Q8_0.gguf

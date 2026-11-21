@@ -403,7 +403,7 @@
           },
           "expr": "sum(smartlife_current_amps * on(device_id) group_left() smartlife_device_topology{level=\"top\",planned_circuit=\"New 15 A\"})",
           "instant": true,
-          "legendFormat": "Server + Desktop + Office",
+          "legendFormat": "Room A + Room B + Room C",
           "refId": "A"
         }
       ],
@@ -546,7 +546,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "quantile_over_time(0.05, sum((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0))[7d:5m])",
+          "expr": "quantile_over_time(0.05, sum((((smartlife_power_watts{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"}) + 0))[7d:5m])",
           "instant": true,
           "legendFormat": "baseline",
           "refId": "A"
@@ -601,7 +601,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "quantile_over_time(0.05, sum((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0))[7d:5m]) * 730 / 1000 * $rate",
+          "expr": "quantile_over_time(0.05, sum((((smartlife_power_watts{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"}) + 0))[7d:5m]) * 730 / 1000 * $rate",
           "instant": true,
           "legendFormat": "baseline",
           "refId": "A"
@@ -615,7 +615,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Live plug readings from Sep 26 21:07; before that, Home Assistant history (hourly, 5-min for the last 10 days). NerdQaxe++ and LLM Server have no HA history (LLM Server uses its UPS for 30 days).",
+      "description": "Live plug readings, with Home Assistant history and UPS or fixed estimates filling earlier gaps.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -639,7 +639,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Office"
+              "options": "Room A"
             },
             "properties": [
               {
@@ -654,7 +654,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop"
+              "options": "Room B"
             },
             "properties": [
               {
@@ -669,7 +669,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server"
+              "options": "Room C"
             },
             "properties": [
               {
@@ -684,7 +684,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "TV and Audio"
+              "options": "Plug 1"
             },
             "properties": [
               {
@@ -699,7 +699,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Internet and Den"
+              "options": "Plug 2"
             },
             "properties": [
               {
@@ -714,7 +714,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "NerdQaxe++"
+              "options": "Plug 3"
             },
             "properties": [
               {
@@ -758,8 +758,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(((smartlife_power_watts{name=\"Office\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Office\"} or smartlife_power_watts_estimate{name=\"Office\"}) + 0)",
-          "legendFormat": "Office",
+          "expr": "(((smartlife_power_watts{name=\"Room A\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Room A\"} or smartlife_power_watts_estimate{name=\"Room A\"}) + 0)",
+          "legendFormat": "Room A",
           "refId": "A"
         },
         {
@@ -767,8 +767,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(((smartlife_power_watts{name=\"Desktop\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Desktop\"} or smartlife_power_watts_estimate{name=\"Desktop\"}) + 0)",
-          "legendFormat": "Desktop",
+          "expr": "(((smartlife_power_watts{name=\"Room B\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Room B\"} or smartlife_power_watts_estimate{name=\"Room B\"}) + 0)",
+          "legendFormat": "Room B",
           "refId": "B"
         },
         {
@@ -776,8 +776,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(((smartlife_power_watts{name=\"Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Server\"} or smartlife_power_watts_estimate{name=\"Server\"}) + 0)",
-          "legendFormat": "Server",
+          "expr": "(((smartlife_power_watts{name=\"Room C\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Room C\"} or smartlife_power_watts_estimate{name=\"Room C\"}) + 0)",
+          "legendFormat": "Room C",
           "refId": "C"
         },
         {
@@ -785,8 +785,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(((smartlife_power_watts{name=\"TV and Audio\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"TV and Audio\"} or smartlife_power_watts_estimate{name=\"TV and Audio\"}) + 0)",
-          "legendFormat": "TV and Audio",
+          "expr": "(((smartlife_power_watts{name=\"Plug 1\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 1\"} or smartlife_power_watts_estimate{name=\"Plug 1\"}) + 0)",
+          "legendFormat": "Plug 1",
           "refId": "D"
         },
         {
@@ -794,8 +794,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(((smartlife_power_watts{name=\"Internet and Den\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Internet and Den\"} or smartlife_power_watts_estimate{name=\"Internet and Den\"}) + 0)",
-          "legendFormat": "Internet and Den",
+          "expr": "(((smartlife_power_watts{name=\"Plug 2\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 2\"} or smartlife_power_watts_estimate{name=\"Plug 2\"}) + 0)",
+          "legendFormat": "Plug 2",
           "refId": "E"
         },
         {
@@ -803,8 +803,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(((smartlife_power_watts{name=\"NerdQaxe++\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"NerdQaxe++\"} or smartlife_power_watts_estimate{name=\"NerdQaxe++\"}) + 0)",
-          "legendFormat": "NerdQaxe++",
+          "expr": "(((smartlife_power_watts{name=\"Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 3\"} or smartlife_power_watts_estimate{name=\"Plug 3\"}) + 0)",
+          "legendFormat": "Plug 3",
           "refId": "F"
         }
       ],
@@ -881,12 +881,12 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum(smartlife_current_amps{name=~\"Server|Desktop\"} and on(device_id) smartlife_voltage_volts < 300) or on() sum((((smartlife_power_watts{name=~\"Server|Desktop\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop\"}) + 0)) / 120",
+          "expr": "sum(smartlife_current_amps{name=~\"Room C|Room B\"} and on(device_id) smartlife_voltage_volts < 300) or on() sum((((smartlife_power_watts{name=~\"Room C|Room B\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B\"}) + 0)) / 120",
           "legendFormat": "load",
           "refId": "A"
         }
       ],
-      "title": "Circuit A · Server + Desktop",
+      "title": "Circuit A · Room C + Room B",
       "type": "timeseries"
     },
     {
@@ -959,12 +959,12 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum(smartlife_current_amps{name=~\"Office|TV and Audio|Internet and Den\"} and on(device_id) smartlife_voltage_volts < 300) or on() sum((((smartlife_power_watts{name=~\"Office|TV and Audio|Internet and Den\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Office|TV and Audio|Internet and Den\"} or smartlife_power_watts_estimate{name=~\"Office|TV and Audio|Internet and Den\"}) + 0)) / 120",
+          "expr": "sum(smartlife_current_amps{name=~\"Room A|Plug 1|Plug 2\"} and on(device_id) smartlife_voltage_volts < 300) or on() sum((((smartlife_power_watts{name=~\"Room A|Plug 1|Plug 2\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room A|Plug 1|Plug 2\"} or smartlife_power_watts_estimate{name=~\"Room A|Plug 1|Plug 2\"}) + 0)) / 120",
           "legendFormat": "load",
           "refId": "A"
         }
       ],
-      "title": "Circuit B · Office, TV, Internet",
+      "title": "Circuit B · Room A, Plug 1, Plug 2",
       "type": "timeseries"
     },
     {
@@ -1037,12 +1037,12 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum(smartlife_current_amps{name=~\"Server|Desktop|Office\"} and on(device_id) smartlife_voltage_volts < 300) or on() sum((((smartlife_power_watts{name=~\"Server|Desktop|Office\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office\"}) + 0)) / 120",
+          "expr": "sum(smartlife_current_amps{name=~\"Room C|Room B|Room A\"} and on(device_id) smartlife_voltage_volts < 300) or on() sum((((smartlife_power_watts{name=~\"Room C|Room B|Room A\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B|Room A\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B|Room A\"}) + 0)) / 120",
           "legendFormat": "load",
           "refId": "A"
         }
       ],
-      "title": "After move · New 15 A (Server + Desktop + Office)",
+      "title": "After move · New 15 A (Room A + Room B + Room C)",
       "type": "timeseries"
     },
     {
@@ -1154,7 +1154,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Cost so far this calendar month against the same span of days a year earlier. Blank = no history a year back (Office starts Oct 2025, Desktop Jan 2026, Internet and Den Dec 2025).",
+      "description": "Cost so far this calendar month against the same span of days a year earlier. Blank means no history.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -1330,7 +1330,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Office"
+              "options": "Room A"
             },
             "properties": [
               {
@@ -1345,7 +1345,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop"
+              "options": "Room B"
             },
             "properties": [
               {
@@ -1360,7 +1360,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server"
+              "options": "Room C"
             },
             "properties": [
               {
@@ -1375,7 +1375,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "TV and Audio"
+              "options": "Plug 1"
             },
             "properties": [
               {
@@ -1390,7 +1390,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Internet and Den"
+              "options": "Plug 2"
             },
             "properties": [
               {
@@ -1405,7 +1405,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "NerdQaxe++"
+              "options": "Plug 3"
             },
             "properties": [
               {
@@ -1444,8 +1444,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum_over_time((((smartlife_power_watts{name=\"Office\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Office\"} or smartlife_power_watts_estimate{name=\"Office\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
-          "legendFormat": "Office",
+          "expr": "sum_over_time((((smartlife_power_watts{name=\"Room A\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Room A\"} or smartlife_power_watts_estimate{name=\"Room A\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
+          "legendFormat": "Room A",
           "refId": "A"
         },
         {
@@ -1453,8 +1453,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum_over_time((((smartlife_power_watts{name=\"Desktop\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Desktop\"} or smartlife_power_watts_estimate{name=\"Desktop\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
-          "legendFormat": "Desktop",
+          "expr": "sum_over_time((((smartlife_power_watts{name=\"Room B\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Room B\"} or smartlife_power_watts_estimate{name=\"Room B\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
+          "legendFormat": "Room B",
           "refId": "B"
         },
         {
@@ -1462,8 +1462,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum_over_time((((smartlife_power_watts{name=\"Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Server\"} or smartlife_power_watts_estimate{name=\"Server\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
-          "legendFormat": "Server",
+          "expr": "sum_over_time((((smartlife_power_watts{name=\"Room C\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Room C\"} or smartlife_power_watts_estimate{name=\"Room C\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
+          "legendFormat": "Room C",
           "refId": "C"
         },
         {
@@ -1471,8 +1471,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum_over_time((((smartlife_power_watts{name=\"TV and Audio\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"TV and Audio\"} or smartlife_power_watts_estimate{name=\"TV and Audio\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
-          "legendFormat": "TV and Audio",
+          "expr": "sum_over_time((((smartlife_power_watts{name=\"Plug 1\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 1\"} or smartlife_power_watts_estimate{name=\"Plug 1\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
+          "legendFormat": "Plug 1",
           "refId": "D"
         },
         {
@@ -1480,8 +1480,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum_over_time((((smartlife_power_watts{name=\"Internet and Den\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Internet and Den\"} or smartlife_power_watts_estimate{name=\"Internet and Den\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
-          "legendFormat": "Internet and Den",
+          "expr": "sum_over_time((((smartlife_power_watts{name=\"Plug 2\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 2\"} or smartlife_power_watts_estimate{name=\"Plug 2\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
+          "legendFormat": "Plug 2",
           "refId": "E"
         },
         {
@@ -1489,8 +1489,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum_over_time((((smartlife_power_watts{name=\"NerdQaxe++\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"NerdQaxe++\"} or smartlife_power_watts_estimate{name=\"NerdQaxe++\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
-          "legendFormat": "NerdQaxe++",
+          "expr": "sum_over_time((((smartlife_power_watts{name=\"Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 3\"} or smartlife_power_watts_estimate{name=\"Plug 3\"}) + 0)[$__interval:1m]) * 60 / 3.6e6",
+          "legendFormat": "Plug 3",
           "refId": "F"
         }
       ],
@@ -1517,7 +1517,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Office"
+              "options": "Room A"
             },
             "properties": [
               {
@@ -1532,7 +1532,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop"
+              "options": "Room B"
             },
             "properties": [
               {
@@ -1547,7 +1547,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server"
+              "options": "Room C"
             },
             "properties": [
               {
@@ -1562,7 +1562,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "TV and Audio"
+              "options": "Plug 1"
             },
             "properties": [
               {
@@ -1577,7 +1577,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Internet and Den"
+              "options": "Plug 2"
             },
             "properties": [
               {
@@ -1592,7 +1592,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "NerdQaxe++"
+              "options": "Plug 3"
             },
             "properties": [
               {
@@ -1668,7 +1668,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Office"
+              "options": "Room A"
             },
             "properties": [
               {
@@ -1683,7 +1683,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop"
+              "options": "Room B"
             },
             "properties": [
               {
@@ -1698,7 +1698,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server"
+              "options": "Room C"
             },
             "properties": [
               {
@@ -1713,7 +1713,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "TV and Audio"
+              "options": "Plug 1"
             },
             "properties": [
               {
@@ -1728,7 +1728,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Internet and Den"
+              "options": "Plug 2"
             },
             "properties": [
               {
@@ -1743,7 +1743,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "NerdQaxe++"
+              "options": "Plug 3"
             },
             "properties": [
               {
@@ -1815,7 +1815,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "^Office ›.*"
+              "options": "^Room A ›.*"
             },
             "properties": [
               {
@@ -1830,7 +1830,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "^Desktop ›.*"
+              "options": "^Room B ›.*"
             },
             "properties": [
               {
@@ -1845,7 +1845,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "^Server ›.*"
+              "options": "^Room C ›.*"
             },
             "properties": [
               {
@@ -1860,7 +1860,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "^TV and Audio ›.*"
+              "options": "^Plug 1 ›.*"
             },
             "properties": [
               {
@@ -1875,7 +1875,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "^Internet and Den ›.*"
+              "options": "^Plug 2 ›.*"
             },
             "properties": [
               {
@@ -1890,7 +1890,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "^NerdQaxe++ ›.*"
+              "options": "^Plug 3 ›.*"
             },
             "properties": [
               {
@@ -1905,7 +1905,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Office › UPS"
+              "options": "Room A › Unmetered load"
             },
             "properties": [
               {
@@ -1920,7 +1920,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop › Desktop"
+              "options": "Room B › Unmetered load"
             },
             "properties": [
               {
@@ -1935,7 +1935,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server › UDM-SE"
+              "options": "Room C › Unmetered load"
             },
             "properties": [
               {
@@ -1950,12 +1950,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop › Desk"
+              "options": "Room B › Plug 4"
             },
             "properties": [
               {
                 "id": "displayName",
-                "value": "Desktop › Laptop"
+                "value": "Room B › Example load"
               }
             ]
           }
@@ -1992,9 +1992,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sort_desc(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Office\"})",
+          "expr": "sort_desc(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Room A\"})",
           "instant": true,
-          "legendFormat": "Office › {{name}}",
+          "legendFormat": "Room A › {{name}}",
           "refId": "A"
         },
         {
@@ -2002,9 +2002,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left() smartlife_device_topology{name=\"Office\"}) - sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Office\"})",
+          "expr": "sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left() smartlife_device_topology{name=\"Room A\"}) - sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Room A\"})",
           "instant": true,
-          "legendFormat": "Office › UPS",
+          "legendFormat": "Room A › Unmetered load",
           "refId": "B"
         },
         {
@@ -2012,9 +2012,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sort_desc(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Desktop\"})",
+          "expr": "sort_desc(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Room B\"})",
           "instant": true,
-          "legendFormat": "Desktop › {{name}}",
+          "legendFormat": "Room B › {{name}}",
           "refId": "C"
         },
         {
@@ -2022,9 +2022,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left() smartlife_device_topology{name=\"Desktop\"}) - sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Desktop\"})",
+          "expr": "sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left() smartlife_device_topology{name=\"Room B\"}) - sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Room B\"})",
           "instant": true,
-          "legendFormat": "Desktop › Desktop",
+          "legendFormat": "Room B › Unmetered load",
           "refId": "D"
         },
         {
@@ -2032,9 +2032,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sort_desc(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Server\"})",
+          "expr": "sort_desc(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Room C\"})",
           "instant": true,
-          "legendFormat": "Server › {{name}}",
+          "legendFormat": "Room C › {{name}}",
           "refId": "E"
         },
         {
@@ -2042,9 +2042,9 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left() smartlife_device_topology{name=\"Server\"}) - sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Server\"})",
+          "expr": "sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left() smartlife_device_topology{name=\"Room C\"}) - sum(avg_over_time((((smartlife_power_watts and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history or smartlife_power_watts_estimate) + 0)[$__range:1m]) * on(device_id) group_left(parent) smartlife_device_topology{level=\"sub\",parent=\"Room C\"})",
           "instant": true,
-          "legendFormat": "Server › UDM-SE",
+          "legendFormat": "Room C › Unmetered load",
           "refId": "F"
         }
       ],
@@ -2137,7 +2137,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsBaseOutputStatus, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\"), \"ups\", \"Server UPS\", \"instance\", \"192.0.2.(223|59)\"))",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsBaseOutputStatus, \"ups\", \"UPS A\", \"instance\", \"192.0.2.114\"), \"ups\", \"UPS B\", \"instance\", \"192.0.2.62\"), \"ups\", \"UPS C\", \"instance\", \"192.0.2.(223|59)\"))",
           "instant": true,
           "legendFormat": "{{ups}}",
           "refId": "A"
@@ -2210,7 +2210,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\"), \"ups\", \"Server UPS\", \"instance\", \"192.0.2.(223|59)\"))",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryCapacity, \"ups\", \"UPS A\", \"instance\", \"192.0.2.114\"), \"ups\", \"UPS B\", \"instance\", \"192.0.2.62\"), \"ups\", \"UPS C\", \"instance\", \"192.0.2.(223|59)\"))",
           "instant": true,
           "legendFormat": "{{ups}}",
           "refId": "A"
@@ -2283,7 +2283,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining / 100, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\"), \"ups\", \"Server UPS\", \"instance\", \"192.0.2.(223|59)\"))",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryRunTimeRemaining / 100, \"ups\", \"UPS A\", \"instance\", \"192.0.2.114\"), \"ups\", \"UPS B\", \"instance\", \"192.0.2.62\"), \"ups\", \"UPS C\", \"instance\", \"192.0.2.(223|59)\"))",
           "instant": true,
           "legendFormat": "{{ups}}",
           "refId": "A"
@@ -2362,7 +2362,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryReplaceIndicator, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\"), \"ups\", \"Server UPS\", \"instance\", \"192.0.2.(223|59)\"))",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceBatteryReplaceIndicator, \"ups\", \"UPS A\", \"instance\", \"192.0.2.114\"), \"ups\", \"UPS B\", \"instance\", \"192.0.2.62\"), \"ups\", \"UPS C\", \"instance\", \"192.0.2.(223|59)\"))",
           "instant": true,
           "legendFormat": "{{ups}}",
           "refId": "A"
@@ -2376,7 +2376,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Watts leaving each UPS. LLM Server UPS sits on the Office plug; Desktop UPS on the Desktop plug; Server UPS on the Server plug. All three report measured watts from their network cards (Server UPS since Oct 12 2026; before that its watts were load % x 1200 W, in 12 W steps).",
+      "description": "Watts leaving each UPS. When measured output is unavailable, estimate it from load percent and rated watts.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -2390,7 +2390,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "LLM Server UPS"
+              "options": "UPS A"
             },
             "properties": [
               {
@@ -2405,7 +2405,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop UPS"
+              "options": "UPS B"
             },
             "properties": [
               {
@@ -2420,7 +2420,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server UPS"
+              "options": "UPS C"
             },
             "properties": [
               {
@@ -2456,7 +2456,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceOutputPower or (upsAdvanceOutputLoad * on(instance, job) upsAdvanceIdentLoadPower / 100), \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\"), \"ups\", \"Server UPS\", \"instance\", \"192.0.2.(223|59)\"))",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceOutputPower or (upsAdvanceOutputLoad * on(instance, job) upsAdvanceIdentLoadPower / 100), \"ups\", \"UPS A\", \"instance\", \"192.0.2.114\"), \"ups\", \"UPS B\", \"instance\", \"192.0.2.62\"), \"ups\", \"UPS C\", \"instance\", \"192.0.2.(223|59)\"))",
           "legendFormat": "{{ups}}",
           "refId": "A"
         }
@@ -2502,7 +2502,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "LLM Server UPS"
+              "options": "UPS A"
             },
             "properties": [
               {
@@ -2517,7 +2517,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Desktop UPS"
+              "options": "UPS B"
             },
             "properties": [
               {
@@ -2532,7 +2532,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Server UPS"
+              "options": "UPS C"
             },
             "properties": [
               {
@@ -2568,7 +2568,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceInputLineVoltage / 10, \"ups\", \"LLM Server UPS\", \"instance\", \"192.0.2.114\"), \"ups\", \"Desktop UPS\", \"instance\", \"192.0.2.62\"), \"ups\", \"Server UPS\", \"instance\", \"192.0.2.(223|59)\"))",
+          "expr": "max by (ups) (label_replace(label_replace(label_replace(upsAdvanceInputLineVoltage / 10, \"ups\", \"UPS A\", \"instance\", \"192.0.2.114\"), \"ups\", \"UPS B\", \"instance\", \"192.0.2.62\"), \"ups\", \"UPS C\", \"instance\", \"192.0.2.(223|59)\"))",
           "legendFormat": "{{ups}}",
           "refId": "A"
         }
@@ -2581,7 +2581,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "LLM Server plug, last 30 days' average power x 24 h x rate. Inside Office, so already part of Office's cost.",
+      "description": "Plug 5, last 30 days' average power x 24 h x rate. Inside Room A, so already part of Room A's cost.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2622,7 +2622,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "avg_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[30d:5m]) * 24 / 1000 * $rate",
+          "expr": "avg_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[30d:5m]) * 24 / 1000 * $rate",
           "instant": true,
           "legendFormat": "LLM cost / day",
           "refId": "A"
@@ -2636,7 +2636,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "LLM Server plug, last 30 days' average power x 730 h x rate. Inside Office, so already part of Office's cost.",
+      "description": "Plug 5, last 30 days' average power x 730 h x rate. Inside Room A, so already part of Room A's cost.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2677,7 +2677,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "avg_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[30d:5m]) * 730 / 1000 * $rate",
+          "expr": "avg_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[30d:5m]) * 730 / 1000 * $rate",
           "instant": true,
           "legendFormat": "LLM cost / month",
           "refId": "A"
@@ -2691,7 +2691,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "LLM Server plug, last 30 days' average power x 8760 h x rate. Inside Office, so already part of Office's cost.",
+      "description": "Plug 5, last 30 days' average power x 8760 h x rate. Inside Room A, so already part of Room A's cost.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2732,7 +2732,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "avg_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[30d:5m]) * 8760 / 1000 * $rate",
+          "expr": "avg_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[30d:5m]) * 8760 / 1000 * $rate",
           "instant": true,
           "legendFormat": "LLM cost / year",
           "refId": "A"
@@ -2746,7 +2746,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "LLM Server plug energy over the selected range.",
+      "description": "Plug 5 energy over the selected range.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2787,7 +2787,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(sum_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[$__range:1m]) * 60 / 3.6e6)",
+          "expr": "(sum_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[$__range:1m]) * 60 / 3.6e6)",
           "instant": true,
           "legendFormat": "LLM energy (range)",
           "refId": "A"
@@ -2801,7 +2801,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Prompt (uncached) + generated tokens served by llama-swap over the selected range (token-saver ledger + llama-swap store; hourly and partly estimated before Sep 25).",
+      "description": "Prompt (uncached) + generated tokens served by llama-swap over the selected range (llama-swap store plus optional token-saver history).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2856,7 +2856,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "LLM Server electricity over the range / (prompt + generated tokens) in millions. Idle power counts, so busy periods look cheaper.",
+      "description": "Plug 5 electricity over the range / (prompt + generated tokens) in millions. Idle power counts, so busy periods look cheaper.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2897,7 +2897,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(sum_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[$__range:1m]) * 60 / 3.6e6) * $rate / ((sum(increase(llamaswap_ledger_tokens_total{kind=~\"input|output\"}[$__range])) > 0) / 1e6)",
+          "expr": "(sum_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[$__range:1m]) * 60 / 3.6e6) * $rate / ((sum(increase(llamaswap_ledger_tokens_total{kind=~\"input|output\"}[$__range])) > 0) / 1e6)",
           "instant": true,
           "legendFormat": "$ / 1M tokens",
           "refId": "A"
@@ -2911,7 +2911,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "LLM Server electricity over the range / generated tokens in millions.",
+      "description": "Plug 5 electricity over the range / generated tokens in millions.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2952,7 +2952,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "(sum_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[$__range:1m]) * 60 / 3.6e6) * $rate / ((sum(increase(llamaswap_ledger_tokens_total{kind=~\"output\"}[$__range])) > 0) / 1e6)",
+          "expr": "(sum_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[$__range:1m]) * 60 / 3.6e6) * $rate / ((sum(increase(llamaswap_ledger_tokens_total{kind=~\"output\"}[$__range])) > 0) / 1e6)",
           "instant": true,
           "legendFormat": "$ / 1M generated",
           "refId": "A"
@@ -2966,7 +2966,7 @@
         "type": "prometheus",
         "uid": "efnh5gcimbv28f"
       },
-      "description": "Both RTX 3090s (DCGM board power) as a share of the LLM Server plug. The rest is CPU, RAM, fans, PSU losses.",
+      "description": "DCGM board power as a share of power measured at Plug 5. The rest is CPU, RAM, fans, PSU losses.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3007,7 +3007,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "avg_over_time(sum(DCGM_FI_DEV_POWER_USAGE)[$__range:1m]) / avg_over_time(sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))[$__range:1m])",
+          "expr": "avg_over_time(sum(DCGM_FI_DEV_POWER_USAGE)[$__range:1m]) / avg_over_time(sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))[$__range:1m])",
           "instant": true,
           "legendFormat": "GPU share",
           "refId": "A"
@@ -3035,7 +3035,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "LLM Server plug"
+              "options": "Plug 5"
             },
             "properties": [
               {
@@ -3101,8 +3101,8 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0))",
-          "legendFormat": "LLM Server plug",
+          "expr": "sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0))",
+          "legendFormat": "Plug 5",
           "refId": "A"
         },
         {
@@ -3119,12 +3119,12 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "sum((((smartlife_power_watts{name=\"LLM Server\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"LLM Server\"} or smartlife_power_watts_estimate{name=\"LLM Server\"}) + 0)) - sum(DCGM_FI_DEV_POWER_USAGE)",
+          "expr": "sum((((smartlife_power_watts{name=\"Plug 5\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=\"Plug 5\"} or smartlife_power_watts_estimate{name=\"Plug 5\"}) + 0)) - sum(DCGM_FI_DEV_POWER_USAGE)",
           "legendFormat": "Rest of system",
           "refId": "C"
         }
       ],
-      "title": "LLM Server: wall power vs GPUs",
+      "title": "Inference host wall power and GPU power",
       "type": "timeseries"
     },
     {

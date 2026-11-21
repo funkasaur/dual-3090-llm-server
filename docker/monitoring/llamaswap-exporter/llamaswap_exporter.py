@@ -1,5 +1,7 @@
 import time
+from contextlib import closing
 from datetime import datetime
+from pathlib import Path
 import requests
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info
 
@@ -20,13 +22,12 @@ last_timestamp = Gauge('llamaswap_last_request_timestamp_seconds', 'Unix time of
 
 active_model = Info('llamaswap_active_model', 'Model used by the most recently seen request')
 
-# llama-swap's totals are cumulative since it moved to a persistent store (Sep 25 19:43). The
-# token-saver ledger's `history` table holds hourly totals from before that (Apr 2026 on, partly
-# estimated). Their sum is an all-time counter; the backfill script writes the same series into
-# Prometheus hourly, so live values continue the backfilled curve.
-LEDGER = '/ledger/llamaswap.sqlite'
-ledger_tokens = Gauge('llamaswap_ledger_tokens_total', 'All-time tokens by kind: token-saver history + llama-swap store', ['kind'])
-ledger_requests = Gauge('llamaswap_ledger_requests_total', 'All-time requests: token-saver history + llama-swap store', ['store'])  # labelled: no 0 before the first read
+# The counters combine llama-swap's persistent store with optional pre-store
+# hourly totals from the token-saver ledger. The backfill script writes the same series.
+LEDGER = Path('/ledger/llamaswap.sqlite')
+NO_HISTORY = dict.fromkeys(('requests', 'input', 'output', 'cache'), 0)
+ledger_tokens = Gauge('llamaswap_ledger_tokens_total', 'All-time tokens by kind: llama-swap store plus optional token-saver history', ['kind'])
+ledger_requests = Gauge('llamaswap_ledger_requests_total', 'All-time requests: llama-swap store plus optional token-saver history', ['store'])
 _offset, _offset_at = None, 0
 
 # Per-request performance (2026-10-12): every activity record once, by id. The activity page holds the
@@ -87,15 +88,18 @@ _last_total = 0
 def history_offset():
     """Sum of the ledger's pre-store hourly history; re-read every 10 minutes."""
     global _offset, _offset_at
-    if _offset is None or time.time() - _offset_at > 600:
+    if not LEDGER.is_file():
+        return _offset if _offset is not None else NO_HISTORY
+    now = time.time()
+    if now - _offset_at > 600:
+        _offset_at = now
         try:
             import sqlite3
-            c = sqlite3.connect(f'file:{LEDGER}?mode=ro&immutable=1', uri=True, timeout=5)  # WAL db on a ro mount
-            first = c.execute('select min(ts) from requests').fetchone()[0] or time.time()
-            row = c.execute('select coalesce(sum(requests),0), coalesce(sum(input_tokens),0), coalesce(sum(output_tokens),0),'
-                            ' coalesce(sum(cache_tokens),0) from history where ts < ?', (first,)).fetchone()
-            c.close()
-            _offset, _offset_at = dict(zip(('requests', 'input', 'output', 'cache'), row)), time.time()
+            with closing(sqlite3.connect(f'file:{LEDGER}?mode=ro&immutable=1', uri=True, timeout=5)) as c:
+                first = c.execute('select min(ts) from requests').fetchone()[0] or now
+                row = c.execute('select coalesce(sum(requests),0), coalesce(sum(input_tokens),0), coalesce(sum(output_tokens),0),'
+                                ' coalesce(sum(cache_tokens),0) from history where ts < ?', (first,)).fetchone()
+            _offset = dict(zip(NO_HISTORY, row))
         except Exception as e:
             print(f"ledger read failed: {e}", flush=True)
     return _offset

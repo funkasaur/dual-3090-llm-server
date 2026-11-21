@@ -10,6 +10,8 @@ Tuya developer project needed). Polls every 60 s: power, voltage, current, relay
   `data/auth.json` (gitignored) and refresh themselves.
 - **Topology:** `topology.json` says which plug feeds which and which circuit each is on.
   Exported as `smartlife_device_topology`; the dashboard and alerts join on it.
+  The included Room A and Plug 1 labels are examples. Use your Smart Life device names
+  in the topology and update the matching names in the dashboard builder and alert examples.
 - **Quirks handled:** tuya-device-sharing-sdk 0.2.15's `update_device_cache()` dies on a
   retired endpoint (1108), so specs are fetched directly; "Smart 15EM Plug-In" plugs report V
   and W in tenths while their spec says scale 0 (detected by voltage > 300).

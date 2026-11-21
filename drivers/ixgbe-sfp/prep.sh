@@ -9,7 +9,9 @@ STATE=/etc/modprobe.d/backups/ixgbe-sfp.last
 [ -e "$NETPLAN" ] && { echo "refusing: $NETPLAN already exists (if an earlier prep.sh made it, run rollback.sh; otherwise move it aside yourself)"; exit 1; }
 TS=$(date +%Y%m%d-%H%M%S)
 mkdir -p /etc/netplan/backups /etc/modprobe.d/backups
+shopt -s nullglob
 for f in /etc/netplan/*.yaml; do cp -p "$f" "/etc/netplan/backups/$(basename "$f").bak-sfp-$TS"; done
+shopt -u nullglob
 [ -f /etc/modprobe.d/ixgbe.conf ] && cp -p /etc/modprobe.d/ixgbe.conf "/etc/modprobe.d/backups/ixgbe.conf.bak-sfp-$TS"
 cp -p "/boot/initrd.img-$(uname -r)" "/boot/initrd.img-$(uname -r).bak-sfp-$TS"
 echo "$TS" > "$STATE"

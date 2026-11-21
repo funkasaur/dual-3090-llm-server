@@ -26,7 +26,8 @@ services:
     ports:
       - "192.0.2.26:10200:10200"
 
-  # Server-side wake word fallback for the Fully tablets' Voice Satellite ("Home Assistant" detection mode).
+  # Server-side wake word fallback for Voice Satellite on wall tablets running Fully Kiosk Browser
+  # ("Home Assistant" detection mode).
   wyoming-openwakeword:
     image: rhasspy/wyoming-openwakeword:2.1.0
     container_name: wyoming-openwakeword

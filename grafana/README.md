@@ -26,7 +26,7 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `GpuJunctionTemperatureHigh` | junction > 88 for 1 min |
 | warning | `GpuPowerCapNotApplied` | > 0 |
 | warning | `GpuTempCollectorStale` | GPU temps > 30 s old for 1 min (sampled every 2 s) |
-| warning | `GpuVramExhausted` | > 0 |
+| warning | `GpuVramExhausted` | VRAM > 99% used for 10 min |
 | warning | `GpuVramTemperatureHigh` | VRAM > 92 for 1 min |
 | critical | `GpuXidErrors` | > 0 |
 | critical | `InferenceEngineDown` | > 0 |
@@ -38,7 +38,7 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `HostMemoryHigh` | > 85 |
 | critical | `InferenceEngineWedged` | probe failing for 2 min, or watchdog unloaded the model ([llm-watchdog](../scripts/llm-watchdog.sh)) |
 | warning | `LlmWatchdogStale` | watchdog silent > 5 min |
-| warning | `NewCircuitLoadHigh` | Server + Desktop + Office 5-min average > 12.5 A for 10 min |
+| warning | `NewCircuitLoadHigh` | Room A + Room B + Room C 5-min average > 12.5 A for 10 min |
 | critical | `NewCircuitOverload` | same three > 14.5 A for 2 min |
 | warning | `SmartLifeExporterDown` | no successful plug poll for 15 min |
 | warning | `MainsVoltageLow` | a circuit's plugs average < 110 V for 5 min (ANSI C84.1 range B) |
@@ -53,6 +53,11 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `NvmeWearHigh` | percentage_used > 80, or available spare within 10 of its threshold (1 h) |
 | warning | `NvmeTemperatureHigh` | NVMe composite > 70 C for 10 min |
 | warning | `SmartctlExporterDown` | job smartctl not scraped for 15 min |
+
+### Alerts not exported in `alert-rules.json`
+
+| Severity | Alert | Threshold |
+|---|---|---|
 | warning | `CadvisorDown` / `LlamaSwapActivityDown` | jobs cadvisor / llama-swap-activity not scraped (or absent) for 15 min (2026-11-15) |
 | warning | `SfpModuleHot` | the 10G SFP+ module > 65 °C for 10 min (`sfp-dom`) |
 | critical | `SfpModuleCritical` | > 72 °C for 5 min |

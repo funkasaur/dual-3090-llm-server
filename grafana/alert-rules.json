@@ -938,7 +938,7 @@
             "type": "prometheus",
             "uid": "efnh5gcimbv28f"
           },
-          "expr": "increase(DCGM_FI_DEV_XID_ERRORS[15m]) > 0",
+          "expr": "sum by (gpu) (DCGM_EXP_XID_ERRORS_COUNT) > 0",
           "instant": true,
           "intervalMs": 1000,
           "maxDataPoints": 43200,
@@ -3247,7 +3247,7 @@
     "keep_firing_for": "0s",
     "annotations": {
       "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
-      "description": "Server + Desktop + Office have averaged {{ humanize $values.A.Value }} A for 10+ minutes, above the 12 A continuous-load limit of a 15 A circuit. Shed load (GPU power limit, move a device) before it becomes routine.",
+      "description": "Room A + Room B + Room C have averaged {{ humanize $values.A.Value }} A for 10+ minutes, above the 12 A continuous-load limit of a 15 A circuit. Shed load (GPU power limit, move a device) before it becomes routine.",
       "summary": "NewCircuitLoadHigh"
     },
     "labels": {
@@ -3451,7 +3451,7 @@
     "keep_firing_for": "0s",
     "annotations": {
       "dashboard": "http://192.0.2.26:2000/d/smartlife-power/home-power",
-      "description": "Server + Desktop + Office are drawing {{ humanize $values.A.Value }} A, close to the 15 A breaker rating. A sustained draw at this level can trip the breaker.",
+      "description": "Room A + Room B + Room C are drawing {{ humanize $values.A.Value }} A, close to the 15 A breaker rating. A sustained draw at this level can trip the breaker.",
       "summary": "NewCircuitOverload"
     },
     "labels": {
@@ -3546,7 +3546,7 @@
         },
         "datasourceUid": "efnh5gcimbv28f",
         "model": {
-          "expr": "sum(avg_over_time((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0)[24h:5m])) / sum(avg_over_time((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0)[7d:5m] offset 1d))",
+          "expr": "sum(avg_over_time((((smartlife_power_watts{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"}) + 0)[24h:5m])) / sum(avg_over_time((((smartlife_power_watts{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"}) + 0)[7d:5m] offset 1d))",
           "instant": true,
           "intervalMs": 1000,
           "maxDataPoints": 43200,
@@ -3563,7 +3563,7 @@
         },
         "datasourceUid": "efnh5gcimbv28f",
         "model": {
-          "expr": "sum(avg_over_time((((smartlife_power_watts{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"} or smartlife_power_watts_estimate{name=~\"Server|Desktop|Office|TV and Audio|Internet and Den|NerdQaxe\\\\+\\\\+\"}) + 0)[24h:5m])) * 24 / 1000",
+          "expr": "sum(avg_over_time((((smartlife_power_watts{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"} or smartlife_power_watts_estimate{name=~\"Room C|Room B|Room A|Plug 1|Plug 2|Plug 3\"}) + 0)[24h:5m])) * 24 / 1000",
           "instant": true,
           "intervalMs": 1000,
           "maxDataPoints": 43200,

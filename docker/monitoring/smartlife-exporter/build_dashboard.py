@@ -8,8 +8,8 @@ def members(key, value):   # top-level plugs on a circuit
 
 DS = {"type": "prometheus", "uid": "efnh5gcimbv28f"}
 METERS = [  # billed (top-level) meters, in palette order = stacking order
-    ("Office", "#3987e5"), ("Desktop", "#d95926"), ("Server", "#199e70"),
-    ("TV and Audio", "#c98500"), ("Internet and Den", "#d55181"), ("NerdQaxe++", "#008300"),
+    ("Room A", "#3987e5"), ("Room B", "#d95926"), ("Room C", "#199e70"),
+    ("Plug 1", "#c98500"), ("Plug 2", "#d55181"), ("Plug 3", "#008300"),
 ]
 CIRCUIT = "#9085e9"            # violet: circuits, distinct from every meter
 ESTIMATE = "#8e8d86"           # neutral: modelled history
@@ -72,7 +72,7 @@ panels.append(stat("Year est.", 16, 3, f"{AVG30} * 8760 / 1000 * $rate", "curren
 panels.append(panel("bargauge", "New 15 A circuit (after move)", 19, 0, 5, 5,
     [dict(expr='sum(smartlife_current_amps * on(device_id) group_left() '
                'smartlife_device_topology{level="top",planned_circuit="New 15 A"})', instant=True,
-          legendFormat="Server + Desktop + Office")],
+          legendFormat="Room A + Room B + Room C")],
     description="Current draw of the meters planned for one 15 A circuit. Amber from 12 A "
                 "(80% continuous-load limit), red from 15 A (breaker rating).",
     options=dict(orientation="horizontal", displayMode="basic", showUnfilled=True, valueMode="text", text=dict(valueSize=34),
@@ -107,8 +107,7 @@ panels.append(panel("stat", "Always-on cost / month", 19, 5, 5, 4, [dict(expr=f"
 # ---- Power by meter ------------------------------------------------------------
 panels.append(panel("timeseries", "Power by meter (stacked = whole home)", 0, 9, 24, 10,
     [dict(expr=src('{name="%s"}' % n), legendFormat=n) for n, _ in METERS],
-    description="Live plug readings from Sep 26 21:07; before that, Home Assistant history (hourly, 5-min for the "
-                "last 10 days). NerdQaxe++ and LLM Server have no HA history (LLM Server uses its UPS for 30 days).",
+    description="Live plug readings, with Home Assistant history and UPS or fixed estimates filling earlier gaps.",
     options=dict(legend=dict(displayMode="table", placement="right", calcs=["lastNotNull", "mean", "max"],
                              sortBy="Mean", sortDesc=True),
                  tooltip=dict(mode="multi", sort="none")),
@@ -133,9 +132,9 @@ def circuit_panel(title, x, key, value, desc):
             custom=dict(drawStyle="line", lineWidth=1, fillOpacity=12, showPoints="never",
                         thresholdsStyle=dict(mode="dashed"), axisBorderShow=False)), overrides=[]))
 
-panels.append(circuit_panel("Circuit A · Server + Desktop", 0, "circuit", "Circuit A", "Today's circuit."))
-panels.append(circuit_panel("Circuit B · Office, TV, Internet", 8, "circuit", "Circuit B", "Today's circuit."))
-panels.append(circuit_panel("After move · New 15 A (Server + Desktop + Office)", 16, "planned_circuit", "New 15 A",
+panels.append(circuit_panel("Circuit A · Room C + Room B", 0, "circuit", "Circuit A", "Today's circuit."))
+panels.append(circuit_panel("Circuit B · Room A, Plug 1, Plug 2", 8, "circuit", "Circuit B", "Today's circuit."))
+panels.append(circuit_panel("After move · New 15 A (Room A + Room B + Room C)", 16, "planned_circuit", "New 15 A",
                             "The three meters planned for one 15 A circuit."))
 
 # ---- Mains voltage and year-over-year -------------------------------------------------
@@ -156,8 +155,7 @@ def yoy(off=""):
 panels.append(panel("table", "This month vs the same days last year", 12, 27, 12, 8,
     [dict(expr=yoy(), format="table", instant=True),
      dict(expr=yoy(" offset 1y"), format="table", instant=True)],
-    description="Cost so far this calendar month against the same span of days a year earlier. Blank = no history "
-                "a year back (Office starts Oct 2025, Desktop Jan 2026, Internet and Den Dec 2025).",
+    description="Cost so far this calendar month against the same span of days a year earlier. Blank means no history.",
     timeFrom="now/M", hideTimeOverride=True,
     transformations=[{"id": "merge", "options": {}},
         {"id": "organize", "options": {"excludeByName": {"Time": True},
@@ -199,9 +197,9 @@ panels.append(cost_panel("Cost by meter · last 12 months", 18, "1y", 300,
 
 # ---- Inside each meter -------------------------------------------------------------
 AVG = f"avg_over_time({W}[$__range:1m])"
-PARENTS = ["Office", "Desktop", "Server"]   # meters that have sub-meters, in palette order
-REST = {"Office": "UPS", "Desktop": "Desktop", "Server": "UDM-SE"}   # what the unmetered remainder is
-CHILD = {"Desk": "Laptop"}                                            # plug name -> what it powers
+PARENTS = ["Room A", "Room B", "Room C"]   # meters that have sub-meters, in palette order
+REST = {key: "Unmetered load" for key in PARENTS}
+CHILD = {"Plug 4": "Example load"}   # plug name -> what it powers
 inside = []
 for par in PARENTS:
     sub = f'on(device_id) group_left(parent) smartlife_device_topology{{level="sub",parent="{par}"}}'
@@ -223,12 +221,10 @@ panels.append(panel("bargauge", "Inside each meter (average power, selected rang
                     for plug, label in CHILD.items() for par in PARENTS if TOPO.get(plug, {}).get("parent") == par])))
 
 # ---- UPS (CyberPower over SNMP, job cyberpower_ups) -------------------------------------
-# All three have RMCARDs. The Server UPS got its RMCARD205 at 192.0.2.59 on 2026-10-12; before that it was
-# PowerPanel Business's SNMP agent on another machine (192.0.2.223, no upsAdvanceOutputPower, so watts = load % x
-# rated watts, 12 W steps). The regex keeps that history under the same name.
-UPS_NAMES = [("192.0.2.114", "LLM Server UPS", "Office"), ("192.0.2.62", "Desktop UPS", "Desktop"),
-             ("192.0.2.(223|59)", "Server UPS", "Server")]   # Server UPS: network rack and other servers
-def ups(expr):   # name the UPSes after what they power; max by (ups) joins Server's .223 history and .59 into one line
+# Example SNMP endpoints. The regex lets UPS C retain one label across an endpoint change.
+UPS_NAMES = [("192.0.2.114", "UPS A", "Room A"), ("192.0.2.62", "UPS B", "Room B"),
+             ("192.0.2.(223|59)", "UPS C", "Room C")]
+def ups(expr):
     for ip, name, _ in UPS_NAMES:
         expr = f'label_replace({expr}, "ups", "{name}", "instance", "{ip}")'
     return f"max by (ups) ({expr})"
@@ -260,9 +256,7 @@ panels.append(ups_stat("UPS battery health", 18, "upsAdvanceBatteryReplaceIndica
     color={"mode": "thresholds"}, thresholds=thresholds((None, WARN_S))))
 panels.append(panel("timeseries", "UPS output power", 0, UPS_Y + UPS_SH, 12, 8,
     [dict(expr=ups(UPS_W), legendFormat="{{ups}}")],
-    description="Watts leaving each UPS. LLM Server UPS sits on the Office plug; Desktop UPS on the Desktop plug; "
-                "Server UPS on the Server plug. All three report measured watts from their network cards (Server UPS "
-                "since Oct 12 2026; before that its watts were load % x 1200 W, in 12 W steps).",
+    description="Watts leaving each UPS. When measured output is unavailable, estimate it from load percent and rated watts.",
     fieldConfig=dict(defaults=dict(unit="watt", min=0, custom=dict(fillOpacity=10, lineWidth=2)), overrides=UPS_COLOURS),
     options=dict(legend=dict(displayMode="list", placement="bottom"), tooltip=dict(mode="multi"))))
 panels.append(panel("timeseries", "UPS input voltage", 12, UPS_Y + UPS_SH, 12, 8,
@@ -274,7 +268,8 @@ panels.append(panel("timeseries", "UPS input voltage", 12, UPS_Y + UPS_SH, 12, 8
 
 # ---- LLM server power cost ----------------------------------------------------------------------
 LLM_Y = UPS_Y + UPS_SH + 8
-LLMW = f'sum({src(chr(123) + "name=" + chr(34) + "LLM Server" + chr(34) + chr(125))})'
+LLM_PLUG_POWER = src('{name="Plug 5"}')
+LLMW = f"sum({LLM_PLUG_POWER})"
 GPUW = "sum(DCGM_FI_DEV_POWER_USAGE)"
 LLM_KWH = f"(sum_over_time({LLMW}[$__range:1m]) * 60 / 3.6e6)"
 TOK = lambda kinds: f'sum(increase(llamaswap_ledger_tokens_total{{kind=~"{kinds}"}}[$__range]))'   # all-time series: token-saver ledger + llama-swap store
@@ -284,26 +279,26 @@ def llm_stat(title, x, w, expr, unit, decimals, desc):
                               reduceOptions=dict(calcs=["lastNotNull"], fields="", values=False)),
                  fieldConfig=dict(defaults=dict(unit=unit, decimals=decimals, color=fixed("text")), overrides=[]))
 LLM30 = f"avg_over_time({LLMW}[30d:5m])"   # same 30-day basis as the home projections at the top
-LLM_PROJ = "LLM Server plug, last 30 days' average power x {h} h x rate. Inside Office, so already part of Office's cost."
+LLM_PROJ = "Plug 5, last 30 days' average power x {h} h x rate. Inside Room A, so already part of Room A's cost."
 panels.append(llm_stat("LLM cost / day", 0, 3, f"{LLM30} * 24 / 1000 * $rate", "currencyUSD", 2, LLM_PROJ.format(h=24)))
 panels.append(llm_stat("LLM cost / month", 3, 3, f"{LLM30} * 730 / 1000 * $rate", "currencyUSD", 0, LLM_PROJ.format(h=730)))
 panels.append(llm_stat("LLM cost / year", 6, 3, f"{LLM30} * 8760 / 1000 * $rate", "currencyUSD", 0, LLM_PROJ.format(h=8760)))
-panels.append(llm_stat("LLM energy (range)", 9, 3, LLM_KWH, "kwatth", 1, "LLM Server plug energy over the selected range."))
+panels.append(llm_stat("LLM energy (range)", 9, 3, LLM_KWH, "kwatth", 1, "Plug 5 energy over the selected range."))
 panels.append(llm_stat("Tokens (range)", 12, 3, TOK("input|output"), "short", 1,
-    "Prompt (uncached) + generated tokens served by llama-swap over the selected range (token-saver ledger + llama-swap store; hourly and partly estimated before Sep 25)."))
+    "Prompt (uncached) + generated tokens served by llama-swap over the selected range (llama-swap store plus optional token-saver history)."))
 panels.append(llm_stat("$ / 1M tokens", 15, 3, f"{LLM_KWH} * $rate / (({TOK('input|output')} > 0) / 1e6)", "currencyUSD", 3,
-    "LLM Server electricity over the range / (prompt + generated tokens) in millions. Idle power counts, so busy periods look cheaper."))
+    "Plug 5 electricity over the range / (prompt + generated tokens) in millions. Idle power counts, so busy periods look cheaper."))
 panels.append(llm_stat("$ / 1M generated", 18, 3, f"{LLM_KWH} * $rate / (({TOK('output')} > 0) / 1e6)", "currencyUSD", 2,
-    "LLM Server electricity over the range / generated tokens in millions."))
+    "Plug 5 electricity over the range / generated tokens in millions."))
 panels.append(llm_stat("GPU share", 21, 3,
     f"avg_over_time({GPUW}[$__range:1m]) / avg_over_time({LLMW}[$__range:1m])", "percentunit", 0,
-    "Both RTX 3090s (DCGM board power) as a share of the LLM Server plug. The rest is CPU, RAM, fans, PSU losses."))
-panels.append(panel("timeseries", "LLM Server: wall power vs GPUs", 0, LLM_Y + 5, 24, 8,
-    [dict(expr=LLMW, legendFormat="LLM Server plug"), dict(expr=GPUW, legendFormat="GPUs (2x 3090)"),
+    "DCGM board power as a share of power measured at Plug 5. The rest is CPU, RAM, fans, PSU losses."))
+panels.append(panel("timeseries", "Inference host wall power and GPU power", 0, LLM_Y + 5, 24, 8,
+    [dict(expr=LLMW, legendFormat="Plug 5"), dict(expr=GPUW, legendFormat="GPUs (2x 3090)"),
      dict(expr=f"{LLMW} - {GPUW}", legendFormat="Rest of system")],
     description="Plug power at the wall against GPU board power. The gap is the rest of the machine plus PSU losses.",
     fieldConfig=dict(defaults=dict(unit="watt", min=0, custom=dict(lineWidth=2, fillOpacity=0)), overrides=[
-        {"matcher": {"id": "byName", "options": "LLM Server plug"}, "properties": [{"id": "color", "value": fixed(dict(METERS)["Office"])}]},
+        {"matcher": {"id": "byName", "options": "Plug 5"}, "properties": [{"id": "color", "value": fixed(dict(METERS)["Room A"])}]},
         {"matcher": {"id": "byName", "options": "GPUs (2x 3090)"}, "properties": [{"id": "color", "value": fixed(CIRCUIT)}]},
         {"matcher": {"id": "byName", "options": "Rest of system"}, "properties": [{"id": "color", "value": fixed(ESTIMATE)}]}]),
     options=dict(legend=dict(displayMode="list", placement="bottom"), tooltip=dict(mode="multi"))))

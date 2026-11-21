@@ -1,16 +1,22 @@
-"""Backfill llamaswap_ledger_{tokens,requests}_total into Prometheus from token-saver's ledger.
+"""Backfill llamaswap_ledger_{tokens,requests}_total from the optional token-saver ledger.
 
 Writes the same all-time series the llamaswap-exporter publishes (history table + requests table,
 cumulative, 5-minute samples; each hourly history row spread evenly over its hour), ending just before
 the exporter's first live sample so the curves join. Load with:
   docker cp ledger.om prometheus:/tmp/ && docker exec prometheus promtool tsdb create-blocks-from openmetrics /tmp/ledger.om /prometheus
-Usage: python3 ledger_backfill.py <end_unix_ts> > ledger.om
+Usage: python3 ledger_backfill.py <end_unix_ts> <path/to/llamaswap.sqlite> > ledger.om
 """
-import sqlite3, sys, bisect
-DB = "/home/aiuser/hermes/hermes-data/plugin-data/token-saver/llamaswap.sqlite"
+import sqlite3
+import sys
+from pathlib import Path
+
+if len(sys.argv) != 3:
+    sys.exit("Usage: ledger_backfill.py <end_unix_ts> <path/to/llamaswap.sqlite>")
+
 LBL = 'instance="192.0.2.26:9105",job="llama-swap-activity"'
 end = int(sys.argv[1])
-c = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+db = Path(sys.argv[2]).resolve()
+c = sqlite3.connect(f"{db.as_uri()}?mode=ro", uri=True)
 first_req = c.execute("select min(ts) from requests").fetchone()[0]
 hist = c.execute("select ts, requests, input_tokens, output_tokens, cache_tokens from history where ts < ? order by ts", (first_req,)).fetchall()
 reqs = c.execute("select ts, 1, input_tokens, output_tokens, cache_tokens from requests where ts < ? order by ts", (end,)).fetchall()

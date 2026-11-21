@@ -9,7 +9,7 @@ DRY = '--dry' in sys.argv
 JOIN = next((int(a.split('=')[1]) for a in sys.argv if a.startswith('--join=')), None)   # unix hour to join at (re-imports)
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 sid, plug = args[0], args[1]; rate = float(args[2]) if len(args) > 2 else None
-BILLED = ['Office','Desktop','Server','TV and Audio','Internet and Den','NerdQaxe++']
+BILLED = ['Room A','Room B','Room C','Plug 1','Plug 2','Plug 3']
 sel = '{name=~"%s"}' % '|'.join(n.replace('+','\\\\+') for n in BILLED) if plug == 'BILLED' else '{name="%s"}' % plug
 SRC = f"(((smartlife_power_watts{sel} and on(device_id) smartlife_voltage_volts < 300) or smartlife_power_watts_history{sel}) + 0)"
 EXPR = f"sum_over_time(sum({SRC})[1h:60s]) * 60 / 3.6e6"

@@ -1,5 +1,5 @@
 """30-day estimate of per-plug power before the smartlife exporter existed.
-UPS-backed: LLM Server = 0.991 x UPS 192.0.2.114; Office = that + 73.2 W; Desktop = 1.031 x UPS 192.0.2.62.
+UPS-backed: Plug 5 = 0.991 x UPS 192.0.2.114; Room A = that + 73.2 W; Room B = 1.031 x UPS 192.0.2.62.
 Flat (tonight's average): the rest. Ratios/averages measured 2026-09-26 21:10-22:00."""
 import json, time, urllib.request, urllib.parse
 END = int(time.mktime(time.strptime("2026-09-26 21:06", "%Y-%m-%d %H:%M")))   # first real sample 21:07
@@ -16,13 +16,13 @@ u114 = rng('avg_over_time(upsAdvanceOutputPower{instance="192.0.2.114"}[1m])', S
 u62 = rng('avg_over_time(upsAdvanceOutputPower{instance="192.0.2.62"}[1m])', START, END)
 ids = {m["metric"]["name"]: m["metric"]["device_id"] for m in json.load(urllib.request.urlopen(
     "http://localhost:2090/api/v1/query?query=smartlife_device_topology"))["data"]["result"]}
-FLAT = {"Server": 168.9, "Brocade Switch": 56.1, "Optiplex 7070 SFF": 35.0, "Desk": 30.3,
-        "TV and Audio": 84.3, "Internet and Den": 7.2, "NerdQaxe++": 0.0}
+FLAT = {"Room C": 168.9, "Plug 6": 56.1, "Plug 7": 35.0, "Plug 4": 30.3,
+        "Plug 1": 84.3, "Plug 2": 7.2, "Plug 3": 0.0}
 ts = range(START, END + 1, 60)
 series = {n: {t: v for t in ts} for n, v in FLAT.items()}
-series["LLM Server"] = {t: 0.991 * u114[t] for t in ts if t in u114}
-series["Office"] = {t: 0.991 * u114[t] + 73.2 for t in ts if t in u114}
-series["Desktop"] = {t: 1.031 * u62[t] for t in ts if t in u62}
+series["Plug 5"] = {t: 0.991 * u114[t] for t in ts if t in u114}
+series["Room A"] = {t: 0.991 * u114[t] + 73.2 for t in ts if t in u114}
+series["Room B"] = {t: 1.031 * u62[t] for t in ts if t in u62}
 with open("backfill.om", "w") as f:
     f.write("# HELP smartlife_power_watts_estimate Modelled plug power before the exporter existed (UPS-scaled or flat average)\n")
     f.write("# TYPE smartlife_power_watts_estimate gauge\n")
@@ -33,6 +33,6 @@ with open("backfill.om", "w") as f:
     f.write("# EOF\n")
 print({n: len(p) for n, p in series.items()}, time.ctime(START), "->", time.ctime(END))
 day = time.mktime(time.strptime("2026-09-26", "%Y-%m-%d"))
-top = ["Office", "Desktop", "Server", "TV and Audio", "Internet and Den", "NerdQaxe++"]
+top = ["Room A", "Room B", "Room C", "Plug 1", "Plug 2", "Plug 3"]
 print("today 00:00-21:06 kWh:", round(sum(v for n in top for t, v in series[n].items() if t >= day) / 60 / 1000, 2))
 print("30d kWh:", round(sum(v for n in top for v in series[n].values()) / 60 / 1000, 1))

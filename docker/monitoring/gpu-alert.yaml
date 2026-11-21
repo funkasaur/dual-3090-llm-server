@@ -47,10 +47,10 @@ groups:
       # --- VRAM ---------------------------------------------------------
       # The original expression divided used by FREE rather than TOTAL, so on a
       # card with 20GB used and 4GB free it evaluated to 500% and fired
-      # permanently, while being unable to express "95% full" at all.
+      # permanently. Use the same 99% threshold as the Grafana rule.
       - alert: GpuVramExhausted
         expr: >-
-          (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 95
+          (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 99
         for: 10m
         labels:
           severity: warning

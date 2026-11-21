@@ -24,7 +24,8 @@ Measured 2026-09-25/26 on the same GGUF, same sampling, replaying real captured 
 | 184k | 30.5-32.1 | 59.5-60.6 |
 | ~240k | 23.5-24.0 | 50.2-51.0 |
 
-That table is the 2026-09 switch decision. The live build (cand-0006, since 2026-10-19) decodes about
+That table is the 2026-09 switch decision. The live build (`cand-0006`, the local build candidate with
+patch 0006, deployed 2026-10-19) decodes about
 100 tok/s: median 91-106 tok/s across context depths over six days of real requests; see the
 [top-level README](../README.md#inference).
 
@@ -50,6 +51,13 @@ llamAmpere's MTP drafter can score only a 65,536-token shortlist of the vocabula
 shortlist was skipped under `--split-mode tensor`. Patch 0004 builds a compact q8_0 draft head (340 MiB) and applies
 the shortlist in tensor mode too. On v0.5.5 the only change from the v0.5.2 version of the patch is that the removed
 fallback ledger became a one-time log line (`[0004] draft vocabulary shortlist applied under SPLIT_MODE_TENSOR`).
+
+To enable it, put a map for the model's vocabulary beside its GGUF and pass
+`--spec-draft-vocab-map /models/<your-model>/draft-vocab-map` in the model command.
+The patch reads the map's selected token IDs and copies the corresponding output-head rows in map order.
+Each ID must index a row in the model's head. The benchmark used a 65,536-token shortlist. The repository
+does not include the map, its file format specification, or a generator. The benchmark's token selection
+method is unknown. Without a map, the drafter scores the full head.
 
 | ctx | v0.5.2 + 0002 + 0003 | v0.5.5 + 0002 + 0003 | v0.5.5 + 0002-0004 |
 |---|---|---|---|
@@ -106,7 +114,7 @@ llama-swap entry sets 512.
 - **Patch 0001** (checkpoints, now upstream): a forced checkpoint restore gave output byte-identical to a cold
   computation and to the unpatched behaviour, with unchanged draft acceptance. Checkpoints went 375 MiB -> 150 MiB at 107k.
 - **Patch 0002** (effort): with the server default `medium`, a request carrying top-level `medium` plus
-  `chat_template_kwargs` `xhigh` (what Hermes sends when an agent asks for xhigh) now renders xhigh; unpatched it
+  `chat_template_kwargs` `xhigh` (what the optional Hermes Agent client sends when asked for xhigh) now renders xhigh; unpatched it
   silently rendered medium.
 
 ## Patches
@@ -119,7 +127,7 @@ partially truncatable. `LLAMA_CKPT_DFT_FULL=1` restores the old behaviour. Mainl
 code (`server-context.cpp`, `update_dft(... PARTIAL_ONLY)`), so this is an upstream candidate.
 
 **0002 — `chat_template_kwargs.reasoning_effort` wins over top-level `reasoning_effort`.** Upstream applies
-the top-level field last. Hermes sends top-level `"reasoning_effort": "medium"` on every request, which would
+the top-level field last. The optional Hermes Agent client sends top-level `"reasoning_effort": "medium"` on every request, which would
 override an agent's requested `xhigh`. ik_llama ignores the top-level field; this keeps that behaviour for
 clients that set the kwargs, and a top-level field on its own still applies.
 

@@ -3,7 +3,7 @@
 Since 2026-11-10 the main entry (`Qwen3.8-27B-Q8-Medium-Reason`) loads ukisai's
 [Swift 1.5](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GGUF) Q8_0 (Qwen3.8-27B post-trained for shorter
 reasoning; 29.0 GB, MTP head included) instead of unsloth's `Qwen3.8-27B-Q8_0.gguf`. Same engine and flags
-(llamAmpere cand-0006, `--split-mode tensor`, `--tensor-split 50,50`, MTP n-max 3, q8_0 KV, medium effort,
+(llamAmpere `cand-0006`, the local build candidate with patch 0006, `--split-mode tensor`, `--tensor-split 50,50`, MTP n-max 3, q8_0 KV, medium effort,
 reasoning budget 24576).
 
 **Verdict:** equal quality and speed; Swift uses fewer tokens on long analysis and ~8% fewer on short reasoning.

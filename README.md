@@ -274,6 +274,10 @@ sudo systemctl enable --now optimize-ai.service optimize-ai.timer nvidia-power-l
 # Shared container network
 docker network create ai-net
 
+# Build the inference backend and prepare its model config. Edit config.yaml for your GGUF files.
+./llamampere/build.sh
+(cd docker/llama-swap/config && cp config.example.yaml config.yaml && "$EDITOR" config.yaml)
+
 # Per-service: copy .env.example to .env and fill it in first
 cd docker/open-webui && cp .env.example .env && $EDITOR .env && docker compose up -d
 ```
