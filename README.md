@@ -53,7 +53,7 @@ most useful file here.
 | GPUs | 2x ASUS ROG Strix RTX 3090, NVLink bridged (4 links, ~14 GB/s each) |
 | Memory | 64GB DDR4-3600 (G.SKILL Trident Z) |
 | Motherboard | MSI MEG X570 GODLIKE |
-| Cooling | Arctic Liquid Freezer III Pro 420, GPUs repasted |
+| Cooling | Arctic Liquid Freezer III Pro 420 (pump head mounted upside down so it clears the top GPU in PCIe 1), an extra fan blowing across both GPUs. GPU thermal putty + PTM not done yet; the bottom card's fans need replacing |
 | PSU | Corsair HX1500i (ATX 3.1) |
 | UPS | CyberPower OL1500RTXL2U, RMCARD205 management card |
 | Networking | Intel 82599 10GbE SFP+ (`ixgbe`) on an M.2 M-key adapter card in the chipset M.2 slot (PCIe 2.0 x4, 5 GT/s), 10GBASE-T copper SFP+ module (fiber planned), linked at 10000 Mb/s; 9.3-9.46 Gb/s iperf3. Onboard Killer E3000 2.5GbE kept as fallback |
