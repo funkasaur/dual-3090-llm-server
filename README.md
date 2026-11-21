@@ -193,7 +193,11 @@ All of it is in [`docker/`](docker/), secrets parameterized, one directory per u
   lowered nDCG@10 by ~4 points against no reranker ([test](docs/reranker-test/README.md)); hybrid search is off
 - **Ingress** — `cloudflared` Zero Trust tunnel, no inbound ports opened
 - **Observability** — Prometheus, Grafana, node-exporter, dcgm-exporter,
-  snmp-exporter, smartctl-exporter (NVMe SMART), plus a small custom exporter for llama-swap tokens/sec
+  snmp-exporter, smartctl-exporter (NVMe SMART), cAdvisor (per container), the 10G SFP module (`sfp-dom`), plus
+  a small custom exporter for llama-swap per-request speed (standalone:
+  [funkasaur/llamaswap-exporter](https://github.com/funkasaur/llamaswap-exporter)); some exporters (UniFi, SNMP for
+  the UPS cards, home power) run on another host since 2026-10-27. A standby Prometheus/Grafana takes over alerting
+  if this box dies ([grafana-standby](https://github.com/funkasaur/grafana-standby))
 - **Backups** — two layers: Borg nightly with Postgres/Qdrant pre-hooks, plus
   Veeam image-level backup with guest freeze/thaw scripts; the Borg repository is
   synced to Google Drive nightly and Veeam copies to a RAID on another machine
@@ -234,6 +238,19 @@ It is not in this repository on purpose. It is a remote-control surface for the 
 is tied to this network, its authentication, mounts and accounts, so publishing it as-is would invite unsafe
 copy-paste installs. A generic version, with safe defaults, TLS and authentication by design, and its own
 threat model and security review, may follow later as a separate project.
+
+---
+
+## Related repositories
+
+Pieces of this setup that grew into their own projects:
+
+| Repo | What |
+|---|---|
+| [funkasaur/codasaur-queue](https://github.com/funkasaur/codasaur-queue) | Background job queue for a single-slot llama-swap / llama.cpp server (was `qwen-queue/`) |
+| [funkasaur/llamaswap-exporter](https://github.com/funkasaur/llamaswap-exporter) | Prometheus exporter for llama-swap per-request metrics, plus a Grafana dashboard |
+| [funkasaur/grafana-standby](https://github.com/funkasaur/grafana-standby) | Grafana/Prometheus standby failover and alert rules from code |
+| [funkasaur/proxmox-cluster-toolkit](https://github.com/funkasaur/proxmox-cluster-toolkit) | Monitoring and maintenance for the small Proxmox VE cluster next to this box |
 
 ---
 

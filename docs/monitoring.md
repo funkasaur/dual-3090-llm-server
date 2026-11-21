@@ -15,8 +15,8 @@ regress after that config change?*
 | `node-exporter` | 9100 | CPU per core, RAM, disk I/O, per-CCD temps; since 2026-11-15 also processes, tcpstat, interrupts (`--path.procfs=/host/proc`, because Docker masks `/proc/interrupts` in containers; ~5k extra series) |
 | `dcgm-exporter` | 2400 | VRAM, utilization, per-GPU watts, throttle reasons |
 | `snmp-exporter` | 9116 | UPS load, battery, runtime |
-| `llamaswap-exporter` | 9105 | tokens/sec, cache hits, active model |
-| `smartctl-exporter` | 9633 | NVMe wear, spare, media errors, temperature |
+| `llamaswap-exporter` | 9105 | per-request speed, context, cache hits, active model ([standalone repo](https://github.com/funkasaur/llamaswap-exporter)); llama-swap >= v269 counts cache inside `input_tokens` (fixed 2026-11-21) |
+| `smartctl-exporter` | 9633 | NVMe wear, spare, media errors, temperature (v0.15.0) |
 | `sfp-dom` | (textfile) | 10G SFP+ module temperature and DOM via `ethtool -m` |
 
 All of it pinned to CCD1. Monitoring that perturbs the thing it measures is
@@ -217,9 +217,9 @@ always-on machine scrapes the same targets and takes over alerting when this one
 
 ## Alerting
 
-**Grafana owns alerting on this build.** The live rules (over 100 here: GPU, CCD, UPS, inference,
-watchdog, backups, agents, home power) live in Grafana's database and
-deliver to Telegram. [`grafana/alert-rules.json`](../grafana/alert-rules.json) is a 36-rule public subset:
+**Grafana owns alerting on this build.** The live rules (164 at a 2026-11-15 audit: GPU, CCD, UPS, inference,
+watchdog, backups, agents, home power, network) live in Grafana's database and
+deliver to Telegram. [`grafana/alert-rules.json`](../grafana/alert-rules.json) is a 36-rule public subset (exported 2026-10-26; the table in [`grafana/README.md`](../grafana/README.md) also lists a few added since):
 GPU, CPU, UPS, inference, watchdog, home power, disks and NVMe; the rest watch machines and services that
 are not part of this repo.
 Prometheus loads **no** rules: the `rule_files:` stanza and the `gpu-alert.yaml` mount are commented out
