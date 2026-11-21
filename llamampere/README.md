@@ -10,7 +10,7 @@ kernels) instead of ik_llama. The ik_llama entry is kept as `Qwen3.8-27B-Q8-Medi
 | Local patches | `0002` reasoning_effort precedence, `0003` CUDA graph cache cap from `GGML_CUDA_MAX_GRAPHS`, `0004` draft vocabulary shortlist under tensor split, `0006` exact p/q draft verify while the reasoning budget / tool grammar are idle, `0007` replay keeps recorded tokens (old 0001 is upstream as `dc2b130`) |
 | Built by | `./build.sh` (CUDA 12.9.1 devel, sm_86, NCCL, `-Wl,--allow-shlib-undefined`) |
 | Runs in | `llama-swap-unified` on cpuset `1-2,17-18` with 2 threads, mounted at `/opt/llamampere` (see [`docker/llama-swap/docker-compose.yaml`](../docker/llama-swap/docker-compose.yaml)) |
-| Model | unsloth `Qwen3.8-27B-Q8_0.gguf`, unchanged |
+| Model | ukisai Swift 1.5 `Swift-1.5-Qwen3.8-27B-Q8_0.gguf` since 2026-11-10 (unsloth `Qwen3.8-27B-Q8_0.gguf` before; A/B in [`docs/swift15-ab.md`](../docs/swift15-ab.md)) |
 
 ## Why
 

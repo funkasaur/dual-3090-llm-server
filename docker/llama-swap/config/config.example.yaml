@@ -33,6 +33,10 @@ models:
   #
   # --cache-ram: host-RAM prompt cache. With local patch 0001 a ~130k session
   # costs ~7 GB, so 32 GB holds about four before evicting one.
+  #
+  # --cache-disk-path: give each model file its own disk prompt-cache dir.
+  # KV cached from other weights must never be restored, so when you swap the
+  # GGUF (e.g. to a post-train like Swift 1.5), point this at a new dir.
   # ---------------------------------------------------------------------
   Qwen-27B-Q8:
     cmd: >
@@ -56,6 +60,8 @@ models:
       --fit off
       --cache-prompt
       --cache-ram 32768
+      --cache-disk-path /root/.cache/llamampere/prompt-cache-<model>
+      --cache-disk-limit 16384
       --ctx-checkpoints 16
       --spec-type draft-mtp
       --spec-draft-n-max 3

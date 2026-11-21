@@ -6,7 +6,8 @@
   It reads a model catalogue, launches the right backend process when a
   request names a model, proxies to it, and unloads it after a TTL. Nothing
   in the frontend needs to know which model or engine is resident.
-- **llamAmpere** — the backend for the main model (Qwen3.8-27B at Q8_0) since
+- **llamAmpere** — the backend for the main model (Qwen3.8-27B at Q8_0; since
+  2026-11-10 the Swift 1.5 post-train of it, [A/B](swift15-ab.md)) since
   2026-09-26. [`JakeATX/llamAmpere`](https://github.com/JakeATX/llamAmpere) is a
   llama.cpp fork with attention kernels written for Ampere (sm_86). It is built
   here from a pinned commit plus two local patches — see

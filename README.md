@@ -30,6 +30,7 @@ most useful file here.
 | [`docs/kalshi-research.md`](docs/kalshi-research.md) | **Project: an LLM agent researching Kalshi prediction markets (paper only), and what it learned** |
 | [`docs/backups.md`](docs/backups.md) | Borg file-level + Veeam image-level, with off-machine copies (Google Drive, a second machine's RAID) |
 | [`docs/rag-embeddings.md`](docs/rag-embeddings.md) | Moving Open WebUI RAG to EmbeddingGemma: migration, rollback, and why the reranker went ([test](docs/reranker-test/README.md)) |
+| [`docs/swift15-ab.md`](docs/swift15-ab.md) | Main model switched to Swift 1.5 (2026-11-10): quality, speed and token A/B, own prompt-cache dir |
 | [`docs/veeam-linux-repository.md`](docs/veeam-linux-repository.md) | Using the Linux box as a Veeam repository, and why the SMB workaround costs you |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | **Findings from auditing this setup against the live machine** |
 | [`scripts/`](scripts/) | Host scripts (patched — see AUDIT) |
@@ -140,7 +141,8 @@ NVLink bridge, pooling 48GB of VRAM so a 27B dense model at Q8 fits with a
 
 Measured on this machine, Qwen3.8-27B at Q8_0 with MTP speculative decoding,
 from the llama-swap request log over six days of real use (2026-10-20 to 10-26,
-472 requests with at least 16 output tokens):
+472 requests with at least 16 output tokens). Since 2026-11-10 the model is the Swift 1.5 post-train of
+Qwen3.8-27B (same size and engine, same speed within 2%: [A/B](docs/swift15-ab.md)):
 
 | Context | Generation, median | 1 in 10 requests above | Requests | Previous ik_llama setup |
 |---|---|---|---|---|
