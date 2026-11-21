@@ -53,6 +53,11 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 | warning | `NvmeWearHigh` | percentage_used > 80, or available spare within 10 of its threshold (1 h) |
 | warning | `NvmeTemperatureHigh` | NVMe composite > 70 C for 10 min |
 | warning | `SmartctlExporterDown` | job smartctl not scraped for 15 min |
+| warning | `CadvisorDown` / `LlamaSwapActivityDown` | jobs cadvisor / llama-swap-activity not scraped (or absent) for 15 min (2026-11-15) |
+| warning | `SfpModuleHot` | the 10G SFP+ module > 65 °C for 10 min (`sfp-dom`) |
+| critical | `SfpModuleCritical` | > 72 °C for 5 min |
+| warning | `SfpDomStale` | `sfp-dom` silent > 5 min or `ethtool -m` can't read the module |
+| warning | `SfpLinkFlapping` | SFP+ port carrier changes > 10 in 10 min (> 5 drops; first fired 2026-10-26) |
 
 `InferenceEngineWedged` waits 2 min: once, a single probe got a 502 `proxy error: EOF` from llama-swap (a
 keep-alive connection closed as a request finished) and alerted although the model kept serving. A real wedge

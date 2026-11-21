@@ -82,7 +82,7 @@ most useful file here.
 > the switch, which retires the copper path. Light levels at cutover:
 > -2.2/-2.6 dBm (server Tx/Rx), -2.3/-2.9 dBm (switch Tx/Rx), i.e. 0.3-0.7 dB
 > loss per strand. Grafana alerts `SfpLinkFlapping` (> 5 drops in 10 min),
-> `SfpModuleHot`/`Critical` and `SfpDomStale` watch it (docs/monitoring.md).
+> `SfpModuleHot`/`Critical` and `SfpDomStale` watch it ([grafana/README.md](grafana/README.md)).
 > The NIC's 32 queue interrupts all land on CCD1 (8-15, 24-31).
 >
 > **Boot wait, fixed 2026-10-27.** With the copper port (`enp42s0`) unplugged,
