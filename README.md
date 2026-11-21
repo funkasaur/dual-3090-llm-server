@@ -1,4 +1,22 @@
-# Dual-3090 LLM Inference Server
+<h1 align="center">Dual-3090 LLM Inference Server</h1>
+
+<p align="center">Document a dual-GPU inference server from Linux scheduling to power limits.</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/funkasaur/dual-3090-llm-server"></a>
+  <a href="https://github.com/funkasaur/dual-3090-llm-server/commits/"><img alt="Last commit" src="https://img.shields.io/github/last-commit/funkasaur/dual-3090-llm-server"></a>
+</p>
+
+<p align="center">
+  <img alt="Cluster nodes" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/funkasaur/proxmox-mini-pc-cluster/badges/cluster_nodes.json">
+  <img alt="VMs running" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/funkasaur/proxmox-mini-pc-cluster/badges/vms_running.json">
+  <img alt="Containers running" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/funkasaur/proxmox-mini-pc-cluster/badges/containers_running.json">
+  <img alt="Uptime days" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/funkasaur/proxmox-mini-pc-cluster/badges/uptime_days.json">
+  <img alt="Alerts firing" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/funkasaur/proxmox-mini-pc-cluster/badges/alerts_firing.json">
+  <img alt="GPUs" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/funkasaur/proxmox-mini-pc-cluster/badges/gpus.json">
+</p>
+
+## Overview
 
 A bare-metal, self-hosted LLM inference server built on a dual-CCD AMD Ryzen 9 5950X
 and two NVLink-bridged RTX 3090s — documented down to the interrupt level.
@@ -17,6 +35,26 @@ to be inactive, misconfigured, or aimed at the wrong target.
 most useful file here.
 
 ---
+
+## Features
+
+- Documents CPU and interrupt placement for a dual-CCD host.
+- Records inference throughput, monitoring and power measurements.
+- Includes host scripts and per-service Compose examples.
+
+## Repository structure
+
+```text
+dual-3090-llm-server/
+├── docs/        # Topology, measurements and audit
+├── docker/      # Compose configurations
+├── llamampere/  # Pinned backend build and patches
+├── scripts/     # Host scripts
+├── systemd/     # Host units
+├── drivers/     # Driver setup
+├── grafana/     # Alert rules and dashboards
+└── veeam/       # Guest snapshot hooks
+```
 
 ## Contents
 
